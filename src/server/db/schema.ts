@@ -10,6 +10,7 @@ import {
   text,
   timestamp,
   varchar,
+  decimal,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -100,6 +101,160 @@ export const verification = createTable("verification", {
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+});
+
+// Organization/Institution tables
+export const organization = createTable("organization", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").unique(),
+  logo: text("logo"),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+  metadata: text("metadata"),
+});
+
+export const member = createTable("member", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  role: text("role").notNull(),
+  createdAt: timestamp("created_at").notNull(),
+});
+
+export const invitation = createTable("invitation", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id),
+  email: text("email").notNull(),
+  role: text("role").notNull(),
+  status: text("status").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  inviterId: text("inviter_id")
+    .notNull()
+    .references(() => user.id),
+});
+
+// Institution-specific tables
+export const institution = createTable("institution", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // 'school' | 'college'
+  address: text("address"),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
+  logo: text("logo"),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+});
+
+// Fee structures and EMI plans
+export const feeStructure = createTable("fee_structure", {
+  id: text("id").primaryKey(),
+  institutionId: text("institution_id")
+    .notNull()
+    .references(() => institution.id),
+  name: text("name").notNull(), // 'Tuition Fee', 'Hostel Fee', etc.
+  description: text("description"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  dueDate: timestamp("due_date"),
+  academicYear: text("academic_year").notNull(),
+  semester: text("semester"), // optional for semester-based fees
+  isRecurring: boolean("is_recurring").default(false),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+});
+
+export const emiPlan = createTable("emi_plan", {
+  id: text("id").primaryKey(),
+  feeStructureId: text("fee_structure_id")
+    .notNull()
+    .references(() => feeStructure.id),
+  name: text("name").notNull(), // '3 months', '6 months', etc.
+  installments: integer("installments").notNull(),
+  interestRate: decimal("interest_rate", { precision: 5, scale: 2 }).default("0.00"), // Zero interest for now
+  processingFee: decimal("processing_fee", { precision: 10, scale: 2 }).default("0.00"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+});
+
+// Parent-student relationships and fee selections
+export const student = createTable("student", {
+  id: text("id").primaryKey(),
+  parentId: text("parent_id")
+    .notNull()
+    .references(() => user.id),
+  institutionId: text("institution_id")
+    .notNull()
+    .references(() => institution.id),
+  name: text("name").notNull(),
+  rollNumber: text("roll_number"),
+  class: text("class"),
+  section: text("section"),
+  admissionDate: timestamp("admission_date"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+});
+
+export const feeApplication = createTable("fee_application", {
+  id: text("id").primaryKey(),
+  studentId: text("student_id")
+    .notNull()
+    .references(() => student.id),
+  feeStructureId: text("fee_structure_id")
+    .notNull()
+    .references(() => feeStructure.id),
+  emiPlanId: text("emi_plan_id")
+    .references(() => emiPlan.id),
+  status: text("status").notNull().default("pending"), // 'pending', 'approved', 'rejected', 'active'
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  remainingAmount: decimal("remaining_amount", { precision: 10, scale: 2 }).notNull(),
+  monthlyInstallment: decimal("monthly_installment", { precision: 10, scale: 2 }),
+  appliedAt: timestamp("applied_at").notNull(),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: text("approved_by").references(() => user.id),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+});
+
+export const installment = createTable("installment", {
+  id: text("id").primaryKey(),
+  feeApplicationId: text("fee_application_id")
+    .notNull()
+    .references(() => feeApplication.id),
+  installmentNumber: integer("installment_number").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  paidDate: timestamp("paid_date"),
+  status: text("status").notNull().default("pending"), // 'pending', 'paid', 'overdue'
+  paymentId: text("payment_id"), // Reference to payment gateway transaction
+  createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
     () => new Date(),
   ),

@@ -53,19 +53,6 @@ export const auth = betterAuth({
     window: 60, // time window in seconds
     max: 5, // max requests in the window
   },
-  socialProviders: {
-    github: {
-      clientId: env.GITHUB_CLIENT_ID,
-      clientSecret: env.GITHUB_CLIENT_SECRET,
-      redirectURI: env.BETTER_AUTH_URL + "/api/auth/callback/github",
-    },
-  },
-  account: {
-    accountLinking: {
-      enabled: true,
-      trustedProviders: ["github"],
-    },
-  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

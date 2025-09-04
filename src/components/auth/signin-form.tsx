@@ -1,7 +1,6 @@
 "use client";
 import { type ErrorContext } from "@better-fetch/fetch";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Github } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -35,7 +34,6 @@ export function SigninForm({
   const router = useRouter();
   const { toast } = useToast();
   const [pendingCredentials, setPendingCredentials] = useState(false);
-  const [pendingGithub, setPendingGithub] = useState(false);
 
   const form = useForm<SignInSchemaType>({
     resolver: zodResolver(signInSchema),
@@ -45,31 +43,6 @@ export function SigninForm({
     },
   });
 
-  const handleSignInWithGithub = async () => {
-    await authClient.signIn.social(
-      {
-        provider: "github",
-      },
-      {
-        onRequest: () => {
-          setPendingGithub(true);
-        },
-        onSuccess: async () => {
-          router.refresh();
-          // router.push("/");
-        },
-        onError: (ctx: ErrorContext) => {
-          toast({
-            title: "Something went wrong",
-            description: ctx.error.message ?? "Something went wrong.",
-            variant: "destructive",
-          });
-        },
-      },
-    );
-
-    setPendingGithub(false);
-  };
 
   const handleCredentialsSignIn = async (values: SignInSchemaType) => {
     await authClient.signIn.email(
@@ -149,16 +122,6 @@ export function SigninForm({
               ))}
               <LoadingButton pending={pendingCredentials}>
                 Sign in
-              </LoadingButton>
-              <LoadingButton
-                onClick={handleSignInWithGithub}
-                pending={pendingGithub}
-                type="button"
-                variant={"secondary"}
-                className="w-full"
-              >
-                <Github className="mr-1 h-4 w-4" />
-                Login with Github
               </LoadingButton>
               <div className="mt-4 text-center text-sm">
                 Don&apos;t have an account?{" "}

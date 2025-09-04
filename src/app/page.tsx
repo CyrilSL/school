@@ -1,75 +1,97 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import SignoutButton from "~/components/auth/signout-button";
-
-import { LatestPost } from "~/components/post";
+import Navbar from "~/components/navbar";
 import { getServerSession } from "~/server/auth";
-import { api, HydrateClient } from "~/trpc/server";
+import { isInstitutionAdmin, isParent } from "~/lib/roles";
 
 export default async function Home() {
-  const hello = await api.post.hello({ text: "from tRPC" });
   const session = await getServerSession();
 
+  // Redirect authenticated users to their appropriate dashboard
   if (session?.user) {
-    void api.post.getLatest.prefetch();
+    // Mock role checking - in production, get from organization membership
+    const userEmail = session.user.email;
+    
+    if (userEmail === "admin@school.edu") {
+      redirect("/dashboard/institution");
+    } else if (userEmail === "parent@example.com") {
+      redirect("/dashboard/parent");
+    }
   }
 
   return (
-    <HydrateClient>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-          <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-            Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
+    <main className="min-h-screen bg-gradient-to-b from-blue-900 to-purple-900 text-white">
+      <Navbar />
+      <div className="flex min-h-screen flex-col items-center justify-center">
+      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
+        <div className="text-center">
+          <h1 className="text-5xl font-extrabold tracking-tight sm:text-[6rem] mb-4">
+            <span className="text-blue-300">MyFee</span>
           </h1>
-          {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8"> */}
-          {/*   <Link */}
-          {/*     className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20" */}
-          {/*     href="https://create.t3.gg/en/usage/first-steps" */}
-          {/*     target="_blank" */}
-          {/*   > */}
-          {/*     <h3 className="text-2xl font-bold">First Steps →</h3> */}
-          {/*     <div className="text-lg"> */}
-          {/*       Just the basics - Everything you need to know to set up your */}
-          {/*       database and authentication. */}
-          {/*     </div> */}
-          {/*   </Link> */}
-          {/*   <Link */}
-          {/*     className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20" */}
-          {/*     href="https://create.t3.gg/en/introduction" */}
-          {/*     target="_blank" */}
-          {/*   > */}
-          {/*     <h3 className="text-2xl font-bold">Documentation →</h3> */}
-          {/*     <div className="text-lg"> */}
-          {/*       Learn more about Create T3 App, the libraries it uses, and how */}
-          {/*       to deploy it. */}
-          {/*     </div> */}
-          {/*   </Link> */}
-          {/* </div> */}
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-2xl text-white">
-              {hello ? hello.greeting : "Loading tRPC query..."}
-            </p>
+          <p className="text-xl text-gray-300 mb-8">
+            Zero-Interest EMI Solutions for Educational Fees
+          </p>
+        </div>
 
-            <div className="flex flex-col items-center justify-center gap-4">
-              <p className="text-center text-2xl text-white">
-                {session && <span>Logged in as {session.user?.name}</span>}
-              </p>
-
-              {!session ? (
-                <Link
-                  href={session ? "/signout" : "/signin"}
-                  className="rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20"
-                >
-                  {session ? "Sign out" : "Sign in"}
-                </Link>
-              ) : (
-                <SignoutButton />
-              )}
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 max-w-4xl">
+          <div className="flex flex-col gap-4 rounded-xl bg-white/10 p-6 backdrop-blur">
+            <h3 className="text-2xl font-bold text-blue-300">For Institutions</h3>
+            <div className="text-lg text-gray-200">
+              Manage student fee applications, approve EMI plans, and track payments all in one place.
+            </div>
+            <div className="text-sm text-blue-200 bg-blue-900/20 p-3 rounded">
+              <strong>Demo Signup:</strong><br/>
+              Email: admin@school.edu<br/>
+              Password: admin123
             </div>
           </div>
-
-          {session?.user && <LatestPost />}
+          
+          <div className="flex flex-col gap-4 rounded-xl bg-white/10 p-6 backdrop-blur">
+            <h3 className="text-2xl font-bold text-green-300">For Parents</h3>
+            <div className="text-lg text-gray-200">
+              Apply for zero-interest EMI plans for your child&apos;s educational expenses.
+            </div>
+            <div className="text-sm text-green-200 bg-green-900/20 p-3 rounded">
+              <strong>Demo Signup:</strong><br/>
+              Email: parent@example.com<br/>
+              Password: parent123
+            </div>
+          </div>
         </div>
-      </main>
-    </HydrateClient>
+
+        <div className="flex flex-col items-center justify-center gap-4">
+          {!session ? (
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <Link
+                href="/signup/parent"
+                className="rounded-full bg-green-600 hover:bg-green-700 px-8 py-3 font-semibold no-underline transition text-center"
+              >
+                Parent Signup
+              </Link>
+              <Link
+                href="/signup/institution"
+                className="rounded-full bg-blue-600 hover:bg-blue-700 px-8 py-3 font-semibold no-underline transition text-center"
+              >
+                Institution Signup
+              </Link>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="text-xl mb-4">Welcome back, {session.user?.name}!</p>
+              <SignoutButton />
+            </div>
+          )}
+        </div>
+
+        <div className="text-center text-gray-400 text-sm max-w-2xl">
+          <p>
+            Experience our platform with the demo credentials above. Institution admins can manage fee applications 
+            and approve EMI plans, while parents can apply for flexible payment options for their children&apos;s education.
+          </p>
+        </div>
+      </div>
+      </div>
+    </main>
   );
 }

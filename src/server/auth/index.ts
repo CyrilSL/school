@@ -1,6 +1,6 @@
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { openAPI, admin } from "better-auth/plugins";
+import { openAPI, admin, organization } from "better-auth/plugins";
 import { headers } from "next/headers";
 import { cache } from "react";
 import { env } from "~/env";
@@ -19,6 +19,11 @@ export const auth = betterAuth({
     openAPI(), // /api/auth/reference
     admin({
       impersonationSessionDuration: 60 * 60 * 24 * 7, // 7 days
+    }),
+    organization({
+      allowUserToCreateOrganization: false, // Only admin can create institutions
+      organizationLimit: 1, // Users can belong to only one institution
+      roles: ["admin", "parent"], // Institution admin and parent roles
     }),
   ],
   session: {
@@ -55,8 +60,8 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
-    autoSignIn: false,
+    requireEmailVerification: false,
+    autoSignIn: true,
     sendResetPassword: async ({ user, url }) => {
       const { error } = await sendResetPasswordEmail({
         email: user.email,

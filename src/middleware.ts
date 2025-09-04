@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { env } from "~/env";
 import type { Session } from "~/server/auth";
 
-const authRoutes = ["/signin", "/signup"];
+const authRoutes = ["/signin", "/signup", "/signup/parent", "/signup/institution", "/login/parent", "/login/institution"];
 const passwordRoutes = ["/reset-password", "/forgot-password"];
 const adminRoutes = ["/admin"];
 // const noAuthRoutes = ["/test"];

@@ -259,3 +259,27 @@ export const installment = createTable("installment", {
     () => new Date(),
   ),
 });
+
+// Parent profile for onboarding information
+export const parentProfile = createTable("parent_profile", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id)
+    .unique(),
+  fullName: text("full_name"),
+  phone: text("phone"),
+  address: text("address"),
+  panCardNumber: text("pan_card_number"),
+  alternateEmail: text("alternate_email"),
+  occupation: text("occupation"),
+  annualIncome: decimal("annual_income", { precision: 12, scale: 2 }),
+  emergencyContactName: text("emergency_contact_name"),
+  emergencyContactPhone: text("emergency_contact_phone"),
+  relationToStudent: text("relation_to_student"), // Father, Mother, Guardian, etc.
+  isOnboardingCompleted: boolean("is_onboarding_completed").default(false),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+});

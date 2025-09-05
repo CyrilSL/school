@@ -47,109 +47,88 @@ export default function ParentDashboard() {
   const [applications, setApplications] = useState<FeeApplication[]>([]);
 
   useEffect(() => {
-    authClient.getSession().then((session) => {
-      setUser(session?.user);
-      setLoading(false);
-    });
+    const initializeData = async () => {
+      try {
+        const session = await authClient.getSession();
+        if (!session?.user) {
+          window.location.href = "/login/parent";
+          return;
+        }
 
-    // Mock data for demonstration
-    setStudents([
-      {
-        id: "s1",
-        name: "Alex Johnson",
-        rollNumber: "2024001",
-        class: "Class 10",
-        section: "A",
-        institution: "Delhi Public School",
-      },
-    ]);
+        setUser(session.user);
 
-    setAvailableFees([
-      {
-        id: "f1",
-        name: "Tuition Fee - Semester 1",
-        amount: 50000,
-        dueDate: "2024-06-30",
-        academicYear: "2024-25",
-      },
-      {
-        id: "f2",
-        name: "Hostel Fee",
-        amount: 25000,
-        dueDate: "2024-07-15",
-        academicYear: "2024-25",
-      },
-      {
-        id: "f3",
-        name: "Lab Fee",
-        amount: 10000,
-        dueDate: "2024-08-01",
-        academicYear: "2024-25",
-      },
-    ]);
+        // Check onboarding status
+        const onboardingResponse = await fetch("/api/parent/onboarding");
+        if (onboardingResponse.ok) {
+          const onboardingData = await onboardingResponse.json();
+          if (!onboardingData.isOnboardingCompleted) {
+            window.location.href = "/onboarding/parent";
+            return;
+          }
+        }
 
-    setEmiPlans([
-      {
-        id: "e1",
-        name: "3 Months EMI",
-        installments: 3,
-        monthlyAmount: 0, // Will be calculated
-        interestRate: 0,
-      },
-      {
-        id: "e2",
-        name: "6 Months EMI",
-        installments: 6,
-        monthlyAmount: 0, // Will be calculated
-        interestRate: 0,
-      },
-      {
-        id: "e3",
-        name: "12 Months EMI",
-        installments: 12,
-        monthlyAmount: 0, // Will be calculated
-        interestRate: 0,
-      },
-    ]);
+        // Fetch real data from APIs
+        try {
+          const [feesResponse, applicationsResponse] = await Promise.all([
+            fetch("/api/fees/available"),
+            fetch("/api/fees/applications")
+          ]);
 
-    setApplications([
-      {
-        id: "a1",
-        feeStructure: {
-          id: "f1",
-          name: "Tuition Fee - Previous Semester",
-          amount: 45000,
-          dueDate: "2024-03-31",
-          academicYear: "2023-24",
-        },
-        emiPlan: {
-          id: "e2",
-          name: "6 Months EMI",
-          installments: 6,
-          monthlyAmount: 7500,
-          interestRate: 0,
-        },
-        status: "approved",
-        appliedAt: "2024-02-15",
-      },
-    ]);
+          if (feesResponse.ok) {
+            const feesData = await feesResponse.json();
+            setStudents(feesData.students || []);
+            setAvailableFees(feesData.availableFees || []);
+            setEmiPlans(feesData.emiPlans || []);
+          }
+
+          if (applicationsResponse.ok) {
+            const applicationsData = await applicationsResponse.json();
+            setApplications(applicationsData.applications || []);
+          }
+        } catch (error) {
+          console.error("Error fetching fee data:", error);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error initializing dashboard:", error);
+        setLoading(false);
+      }
+    };
+
+    initializeData();
   }, []);
 
-  const applyForEMI = (feeId: string, emiPlanId: string) => {
-    const fee = availableFees.find(f => f.id === feeId);
-    const emiPlan = emiPlans.find(e => e.id === emiPlanId);
-    
-    if (fee && emiPlan) {
-      const monthlyAmount = fee.amount / emiPlan.installments;
-      const newApplication: FeeApplication = {
-        id: `a${Date.now()}`,
-        feeStructure: fee,
-        emiPlan: { ...emiPlan, monthlyAmount },
-        status: "pending",
-        appliedAt: new Date().toISOString().split('T')[0],
-      };
-      
-      setApplications(prev => [...prev, newApplication]);
+  const applyForEMI = async (feeId: string, emiPlanId: string) => {
+    try {
+      const response = await fetch("/api/fees/applications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          studentId: students[0]?.id, // Use first student for now
+          feeStructureId: feeId,
+          emiPlanId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to apply for EMI");
+      }
+
+      // Refresh applications
+      const applicationsResponse = await fetch("/api/fees/applications");
+      if (applicationsResponse.ok) {
+        const applicationsData = await applicationsResponse.json();
+        setApplications(applicationsData.applications || []);
+      }
+
+      alert("EMI application submitted successfully!");
+    } catch (error) {
+      console.error("Error applying for EMI:", error);
+      alert(error instanceof Error ? error.message : "Failed to apply for EMI");
     }
   };
 
@@ -162,7 +141,7 @@ export default function ParentDashboard() {
         <p className="text-gray-600">Welcome, {user?.name}</p>
         <div className="mt-2 p-2 bg-green-100 rounded">
           <p className="text-sm text-green-800">
-            Role: Parent | Organization: {user?.organizationId || "Demo Institution"}
+            Role: Parent | Organization: {user?.organizationId || "Not Assigned"}
           </p>
         </div>
       </div>
@@ -275,6 +254,9 @@ export default function ParentDashboard() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Applied Date
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -305,6 +287,17 @@ export default function ParentDashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {application.appliedAt}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {application.status === "approved" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.location.href = `/dashboard/parent/installments?applicationId=${application.id}`}
+                        >
+                          View Installments
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}

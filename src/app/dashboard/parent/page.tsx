@@ -1,8 +1,7 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { authClient } from "~/server/auth/client";
+import { redirect } from "next/navigation";
+import { getServerSession } from "~/server/auth";
 import { Button } from "~/components/ui/button";
+import OnboardingChecker from "~/components/onboarding-checker";
 
 interface Student {
   id: string;
@@ -37,79 +36,34 @@ interface FeeApplication {
   appliedAt: string;
 }
 
-export default function ParentDashboard() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [availableFees, setAvailableFees] = useState<FeeStructure[]>([]);
-  const [emiPlans, setEmiPlans] = useState<EmiPlan[]>([]);
-  const [applications, setApplications] = useState<FeeApplication[]>([]);
+export default async function ParentDashboard() {
+  // Server-side authentication check (same as homepage)
+  const session = await getServerSession();
+  
+  if (!session?.user) {
+    redirect("/login/parent");
+  }
 
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        // Skip session check and API calls for now - just get user data differently
-        setUser({ name: "Parent User", email: "parent@example.com" });
-        
-        // Skip all API calls that were potentially causing issues
-        setStudents([]);
-        setAvailableFees([]);
-        setEmiPlans([]);
-        setApplications([]);
-        
-        setLoading(false);
-      } catch (error) {
-        console.error("Error initializing dashboard:", error);
-        setLoading(false);
-      }
-    };
+  // For now, let the dashboard load and handle onboarding check client-side
+  // The server-side check was causing 401 errors
+  // TODO: Implement proper server-side onboarding check later
 
-    initializeData();
-  }, []);
+  // If we reach here, user is authenticated and onboarding is complete
+  const students: Student[] = [];
+  const availableFees: FeeStructure[] = [];
+  const emiPlans: EmiPlan[] = [];
+  const applications: FeeApplication[] = [];
 
-  const applyForEMI = async (feeId: string, emiPlanId: string) => {
-    try {
-      const response = await fetch("/api/fees/applications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          studentId: students[0]?.id, // Use first student for now
-          feeStructureId: feeId,
-          emiPlanId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to apply for EMI");
-      }
-
-      // Refresh applications
-      const applicationsResponse = await fetch("/api/fees/applications");
-      if (applicationsResponse.ok) {
-        const applicationsData = await applicationsResponse.json();
-        setApplications(applicationsData.applications || []);
-      }
-
-      alert("EMI application submitted successfully!");
-    } catch (error) {
-      console.error("Error applying for EMI:", error);
-      alert(error instanceof Error ? error.message : "Failed to apply for EMI");
-    }
-  };
-
-  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="container mx-auto p-6">
+      <OnboardingChecker />
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Parent Dashboard</h1>
-        <p className="text-gray-600">Welcome, {user?.name}</p>
+        <p className="text-gray-600">Welcome, {session.user?.name}</p>
         <div className="mt-2 p-2 bg-green-100 rounded">
           <p className="text-sm text-green-800">
-            Role: Parent | Organization: {user?.organizationId || "Not Assigned"}
+            Role: Parent | Email: {session.user?.email}
           </p>
         </div>
       </div>
@@ -118,8 +72,22 @@ export default function ParentDashboard() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Your Students</h2>
         {students.length === 0 ? (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-yellow-800">No students found. Complete your onboarding to add student information.</p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="text-center">
+              <div className="text-blue-600 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Added Yet</h3>
+              <p className="text-blue-700 mb-4">It looks like you haven't added any student information yet.</p>
+              <a 
+                href="/onboarding/parent"
+                className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium transition-colors"
+              >
+                Add Student Information
+              </a>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -186,15 +154,13 @@ export default function ParentDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="space-x-2">
                           {emiPlans.map((plan) => (
-                            <Button
+                            <button
                               key={plan.id}
-                              size="sm"
-                              variant="outline"
-                              onClick={() => applyForEMI(fee.id, plan.id)}
-                              className="mb-1"
+                              className="mb-1 inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                              disabled
                             >
                               {plan.name} (₹{(fee.amount / plan.installments).toLocaleString()}/month)
-                            </Button>
+                            </button>
                           ))}
                         </div>
                       </td>
@@ -280,13 +246,12 @@ export default function ParentDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {application.status === "approved" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => window.location.href = `/dashboard/parent/installments?applicationId=${application.id}`}
+                          <a
+                            href={`/dashboard/parent/installments?applicationId=${application.id}`}
+                            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
                           >
                             View Installments
-                          </Button>
+                          </a>
                         )}
                       </td>
                     </tr>

@@ -1,9 +1,10 @@
-"use client";
-
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
+import { getServerSession } from "~/server/auth";
+import SignoutButton from "~/components/auth/signout-button";
 
-export default function Navbar() {
+export default async function Navbar() {
+  const session = await getServerSession();
   return (
     <nav className="bg-white/10 backdrop-blur-sm border-b border-white/20">
       <div className="container mx-auto px-4">
@@ -39,32 +40,65 @@ export default function Navbar() {
 
           {/* Auth Buttons */}
           <div className="flex items-center space-x-2">
-            <Link href="/signup/parent">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="border-green-400 text-green-400 hover:bg-green-400 hover:text-white"
-              >
-                Parent Signup
-              </Button>
-            </Link>
-            <Link href="/signup/institution">
-              <Button 
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Institution Signup
-              </Button>
-            </Link>
+            {!session ? (
+              <>
+                <Link href="/login/parent">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-green-400 text-green-400 hover:bg-green-400 hover:text-white"
+                  >
+                    Parent Login
+                  </Button>
+                </Link>
+                <Link href="/login/institution">
+                  <Button 
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Institution Login
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="text-sm text-gray-200 mr-2">
+                  Welcome, {session.user?.name}!
+                </div>
+                <Link href={
+                  session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin") 
+                    ? "/dashboard/institution" 
+                    : "/dashboard/parent"
+                }>
+                  <Button 
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Dashboard
+                  </Button>
+                </Link>
+                <SignoutButton />
+              </>
+            )}
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile menu button - for future mobile menu implementation */}
           <div className="md:hidden">
-            <Button variant="ghost" size="sm">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </Button>
+            {/* Show Dashboard button for mobile too if authenticated */}
+            {session && (
+              <Link href={
+                session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin") 
+                  ? "/dashboard/institution" 
+                  : "/dashboard/parent"
+              }>
+                <Button 
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Dashboard
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

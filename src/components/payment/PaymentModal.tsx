@@ -201,7 +201,11 @@ export default function PaymentModal({ isOpen, onClose, installment, onSuccess }
 
           <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
             <p className="text-xs text-yellow-800">
-              🔒 This is a demo payment system. In production, this would integrate with actual payment gateways like Razorpay, Stripe, or PayU.
+              🔒 <strong>Secure Platform Payment:</strong> You are paying to our platform, not directly to the institution. 
+              We have already settled the full amount with your school/college.
+            </p>
+            <p className="text-xs text-gray-600 mt-2">
+              Demo payment system - In production, integrates with Razorpay, Stripe, or PayU.
             </p>
           </div>
         </CardContent>

@@ -170,7 +170,13 @@ export default function ParentDashboard() {
 
       {/* Available Fees Section */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Available Fees for EMI</h2>
+        <h2 className="text-xl font-semibold mb-4">Available Fees for EMI (Platform Financing)</h2>
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>How it works:</strong> Apply for EMI through our platform. We pay the institution directly, 
+            and you pay us in easy monthly installments with zero interest.
+          </p>
+        </div>
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -230,7 +236,13 @@ export default function ParentDashboard() {
 
       {/* Applications Section */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Your EMI Applications</h2>
+        <h2 className="text-xl font-semibold mb-4">Your EMI Applications (Platform Managed)</h2>
+        <div className="mb-4 p-3 bg-green-50 rounded-lg">
+          <p className="text-sm text-green-800">
+            ✓ <strong>Platform Protection:</strong> Once approved, we handle payment to your institution immediately. 
+            You can then pay us through convenient EMI installments.
+          </p>
+        </div>
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">

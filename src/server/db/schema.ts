@@ -183,16 +183,17 @@ export const feeStructure = createTable("fee_structure", {
   ),
 });
 
+// Platform-level EMI plans (not institution specific)
 export const emiPlan = createTable("emi_plan", {
   id: text("id").primaryKey(),
-  feeStructureId: text("fee_structure_id")
-    .notNull()
-    .references(() => feeStructure.id),
   name: text("name").notNull(), // '3 months', '6 months', etc.
   installments: integer("installments").notNull(),
-  interestRate: decimal("interest_rate", { precision: 5, scale: 2 }).default("0.00"), // Zero interest for now
+  interestRate: decimal("interest_rate", { precision: 5, scale: 2 }).default("0.00"),
   processingFee: decimal("processing_fee", { precision: 10, scale: 2 }).default("0.00"),
   isActive: boolean("is_active").default(true),
+  minAmount: decimal("min_amount", { precision: 10, scale: 2 }).default("1000.00"), // Minimum fee amount for EMI eligibility
+  maxAmount: decimal("max_amount", { precision: 10, scale: 2 }).default("1000000.00"), // Maximum fee amount for EMI
+  description: text("description"), // "No interest, pay in 3 easy installments"
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
     () => new Date(),
@@ -230,13 +231,15 @@ export const feeApplication = createTable("fee_application", {
     .references(() => feeStructure.id),
   emiPlanId: text("emi_plan_id")
     .references(() => emiPlan.id),
-  status: text("status").notNull().default("pending"), // 'pending', 'approved', 'rejected', 'active'
+  status: text("status").notNull().default("platform_review"), // 'platform_review', 'approved', 'rejected', 'active', 'paid_to_institution'
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  remainingAmount: decimal("remaining_amount", { precision: 10, scale: 2 }).notNull(),
+  remainingAmount: decimal("remaining_amount", { precision: 10, scale: 2 }).notNull(), // What parent owes to platform
   monthlyInstallment: decimal("monthly_installment", { precision: 10, scale: 2 }),
+  platformPaidToInstitution: boolean("platform_paid_to_institution").default(false), // Has platform paid institution the full amount?
+  institutionPaymentDate: timestamp("institution_payment_date"), // When platform paid institution
   appliedAt: timestamp("applied_at").notNull(),
   approvedAt: timestamp("approved_at"),
-  approvedBy: text("approved_by").references(() => user.id),
+  approvedBy: text("approved_by").references(() => user.id), // Platform admin who approved
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
     () => new Date(),
@@ -254,6 +257,26 @@ export const installment = createTable("installment", {
   paidDate: timestamp("paid_date"),
   status: text("status").notNull().default("pending"), // 'pending', 'paid', 'overdue'
   paymentId: text("payment_id"), // Reference to payment gateway transaction
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+});
+
+// Platform payments to institutions (lump sum payments)
+export const institutionPayment = createTable("institution_payment", {
+  id: text("id").primaryKey(),
+  institutionId: text("institution_id")
+    .notNull()
+    .references(() => institution.id),
+  feeApplicationIds: text("fee_application_ids").notNull(), // JSON array of fee application IDs included in this payment
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  paymentDate: timestamp("payment_date").notNull(),
+  paymentMethod: text("payment_method").notNull().default("bank_transfer"), // 'bank_transfer', 'upi', 'cheque'
+  transactionId: text("transaction_id"), // Bank transaction reference
+  status: text("status").notNull().default("completed"), // 'pending', 'completed', 'failed'
+  notes: text("notes"), // Any additional notes about the payment
+  createdBy: text("created_by").references(() => user.id), // Platform admin who initiated payment
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
     () => new Date(),

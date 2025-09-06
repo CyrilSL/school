@@ -142,6 +142,13 @@ export default function InstallmentsPage() {
         
         <h1 className="text-3xl font-bold mb-2">EMI Installments</h1>
         <p className="text-gray-600">{application.feeStructure.name} - {application.feeStructure.academicYear}</p>
+        
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            💡 <strong>Payment to Platform:</strong> These payments are made to our platform. 
+            We have already paid your institution the full amount upfront.
+          </p>
+        </div>
       </div>
 
       {/* Summary Cards */}

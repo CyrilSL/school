@@ -53,11 +53,11 @@ export default function InstitutionDashboard() {
 
         setUser(session.user);
 
-        // Fetch real fee application data
-        const response = await fetch("/api/institution/fees");
+        // Fetch EMI applications and platform payments data
+        const response = await fetch("/api/institution/payments");
         if (response.ok) {
           const data = await response.json();
-          setFeeApplications(data.applications || []);
+          setFeeApplications(data.emiApplications || []);
         }
         
         setLoading(false);
@@ -70,38 +70,10 @@ export default function InstitutionDashboard() {
     initializeData();
   }, []);
 
-  const handleApplicationAction = async (applicationId: string, action: "approve" | "reject") => {
-    try {
-      const response = await fetch("/api/institution/fees", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          applicationId,
-          action,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update application");
-      }
-
-      // Update local state
-      setFeeApplications(prev =>
-        prev.map(app =>
-          app.id === applicationId
-            ? { ...app, status: action === "approve" ? "approved" : "rejected" }
-            : app
-        )
-      );
-
-      alert(`Application ${action}d successfully!`);
-    } catch (error) {
-      console.error("Error updating application:", error);
-      alert(error instanceof Error ? error.message : "Failed to update application");
-    }
+  // Institution can no longer approve/reject EMI applications
+  // This is now handled by the platform
+  const handleApplicationAction = (applicationId: string, action: "approve" | "reject") => {
+    alert("EMI applications are now reviewed and approved by the platform team. You will receive the full payment once approved.");
   };
 
   if (loading) return <div>Loading...</div>;
@@ -124,31 +96,36 @@ export default function InstitutionDashboard() {
           <p className="text-2xl font-bold text-blue-600">{feeApplications.length}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="font-semibold text-gray-900">Pending Approvals</h3>
+          <h3 className="font-semibold text-gray-900">Platform Review</h3>
           <p className="text-2xl font-bold text-orange-600">
-            {feeApplications.filter(app => app.status === "pending").length}
+            {feeApplications.filter(app => app.status === "platform_review").length}
           </p>
+          <p className="text-xs text-gray-500 mt-1">EMIs under platform review</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="font-semibold text-gray-900">Approved EMIs</h3>
-          <p className="text-2xl font-bold text-green-600">
-            {feeApplications.filter(app => app.status === "approved").length}
+          <h3 className="font-semibold text-gray-900">Payment Pending</h3>
+          <p className="text-2xl font-bold text-blue-600">
+            {feeApplications.filter(app => app.status === "approved" && !app.platformPaidToInstitution).length}
           </p>
+          <p className="text-xs text-gray-500 mt-1">Approved, payment due</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <Button 
             className="w-full h-full flex flex-col items-center justify-center"
             onClick={() => window.location.href = "/dashboard/institution/payments"}
           >
-            <div className="text-sm font-medium mb-1">View Payment</div>
-            <div className="text-lg font-bold">Tracking</div>
+            <div className="text-sm font-medium mb-1">Platform</div>
+            <div className="text-lg font-bold">Payments</div>
           </Button>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b">
-          <h2 className="text-xl font-semibold">Fee Applications</h2>
+          <h2 className="text-xl font-semibold">EMI Applications (Platform Managed)</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            These EMI applications are reviewed and approved by our platform. You will receive lump sum payments for approved applications.
+          </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -211,23 +188,14 @@ export default function InstitutionDashboard() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {application.status === "pending" && (
-                      <div className="space-x-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleApplicationAction(application.id, "approve")}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleApplicationAction(application.id, "reject")}
-                        >
-                          Reject
-                        </Button>
-                      </div>
+                    {application.status === "platform_review" && (
+                      <span className="text-xs text-gray-500">Platform reviewing</span>
+                    )}
+                    {application.status === "approved" && !application.platformPaidToInstitution && (
+                      <span className="text-xs text-green-600 font-medium">Payment processing</span>
+                    )}
+                    {application.platformPaidToInstitution && (
+                      <span className="text-xs text-green-700 font-medium">✓ Paid</span>
                     )}
                   </td>
                 </tr>

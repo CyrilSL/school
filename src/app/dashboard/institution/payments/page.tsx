@@ -115,8 +115,8 @@ export default function PaymentsPage() {
           ← Back to Dashboard
         </Button>
         
-        <h1 className="text-3xl font-bold mb-2">Payment Tracking</h1>
-        <p className="text-gray-600">Monitor fee payments and EMI progress</p>
+        <h1 className="text-3xl font-bold mb-2">Platform Payments</h1>
+        <p className="text-gray-600">Lump sum payments received from the platform for approved EMI applications</p>
       </div>
 
       {/* Summary Cards */}

@@ -129,7 +129,6 @@ export default function ParentOnboarding() {
       }
 
       const result = await response.json();
-      console.log("Onboarding completed:", result);
       
       router.push("/dashboard/parent");
     } catch (error) {

@@ -8,17 +8,18 @@ import { isInstitutionAdmin, isParent } from "~/lib/roles";
 export default async function Home() {
   const session = await getServerSession();
 
-  // Redirect authenticated users to their appropriate dashboard
+  // Temporarily disable redirect to debug infinite loop
+  /*
   if (session?.user) {
-    // Mock role checking - in production, get from organization membership
     const userEmail = session.user.email;
     
-    if (userEmail === "admin@school.edu") {
+    if (userEmail === "admin@school.edu" || userEmail?.includes("admin")) {
       redirect("/dashboard/institution");
-    } else if (userEmail === "parent@example.com") {
+    } else {
       redirect("/dashboard/parent");
     }
   }
+  */
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-900 to-purple-900 text-white">

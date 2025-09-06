@@ -70,11 +70,8 @@ export default function InstitutionDashboard() {
     initializeData();
   }, []);
 
-  // Institution can no longer approve/reject EMI applications
-  // This is now handled by the platform
-  const handleApplicationAction = (applicationId: string, action: "approve" | "reject") => {
-    alert("EMI applications are now reviewed and approved by the platform team. You will receive the full payment once approved.");
-  };
+  // EMI applications are now managed entirely by the platform
+  // Institutions only view the status and receive payments
 
   if (loading) return <div>Loading...</div>;
 

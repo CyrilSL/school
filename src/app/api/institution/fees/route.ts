@@ -72,43 +72,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  try {
-    const session = await getServerSession();
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { applicationId, action } = body;
-
-    if (!applicationId || !action) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
-    if (!["approve", "reject"].includes(action)) {
-      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-    }
-
-    // Update application status
-    const [updatedApplication] = await db
-      .update(feeApplication)
-      .set({
-        status: action === "approve" ? "approved" : "rejected",
-        approvedAt: action === "approve" ? new Date() : null,
-        approvedBy: action === "approve" ? session.user.id : null,
-      })
-      .where(eq(feeApplication.id, applicationId))
-      .returning();
-
-    return NextResponse.json({ 
-      success: true,
-      application: updatedApplication
-    });
-  } catch (error) {
-    console.error("Error updating application status:", error);
-    return NextResponse.json({ 
-      error: "Internal server error" 
-    }, { status: 500 });
-  }
+  // Institutions can no longer approve/reject EMI applications
+  // This is now handled exclusively by the platform
+  return NextResponse.json({ 
+    error: "EMI applications are managed by the platform. Institutions cannot approve or reject applications." 
+  }, { status: 403 });
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
 import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
 import OnboardingChecker from "~/components/onboarding-checker";
 import ResumeOnboarding from "~/components/resume-onboarding";
 
@@ -233,15 +234,17 @@ export default async function ParentDashboard() {
                         ₹{application.emiPlan.monthlyAmount.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          application.status === "approved" 
-                            ? "bg-green-100 text-green-800"
-                            : application.status === "rejected"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}>
+                        <Badge 
+                          variant={
+                            application.status === "approved" 
+                              ? "default"
+                              : application.status === "rejected"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
                           {application.status}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {application.appliedAt}

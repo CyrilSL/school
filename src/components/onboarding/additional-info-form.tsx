@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { useToast } from "~/hooks/use-toast";
 
 interface AdditionalInfoData {
   alternateEmail: string;
@@ -16,6 +17,7 @@ interface AdditionalInfoData {
 
 export default function AdditionalInfoForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const [formData, setFormData] = useState<AdditionalInfoData>({
     alternateEmail: "",
     occupation: "",
@@ -29,7 +31,11 @@ export default function AdditionalInfoForm() {
     // Check if Step 1 is completed
     const parentInfoData = localStorage.getItem('onboarding-parent-info');
     if (!parentInfoData) {
-      alert("Please complete Step 1 first");
+      toast({
+        title: "Please complete Step 1 first",
+        description: "You need to complete the parent information step before proceeding.",
+        variant: "destructive"
+      });
       router.push("/onboarding/parent/steps/1");
       return;
     }
@@ -61,12 +67,20 @@ export default function AdditionalInfoForm() {
 
   const validateForm = () => {
     if (formData.emergencyContactPhone && !validatePhone(formData.emergencyContactPhone)) {
-      alert("Please enter a valid emergency contact number");
+      toast({
+        title: "Invalid emergency contact number",
+        description: "Please enter a valid emergency contact number",
+        variant: "destructive"
+      });
       return false;
     }
 
     if (formData.alternateEmail && !/\S+@\S+\.\S+/.test(formData.alternateEmail)) {
-      alert("Please enter a valid email address");
+      toast({
+        title: "Invalid email address",
+        description: "Please enter a valid email address",
+        variant: "destructive"
+      });
       return false;
     }
 
@@ -87,7 +101,10 @@ export default function AdditionalInfoForm() {
 
   const handleSaveAndExit = () => {
     saveProgress();
-    alert("Your progress has been saved. You can continue later from your dashboard.");
+    toast({
+      title: "Progress saved",
+      description: "Your progress has been saved. You can continue later from your dashboard."
+    });
     router.push("/dashboard/parent");
   };
 

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Textarea } from "~/components/ui/textarea";
+import { useToast } from "~/hooks/use-toast";
 
 interface ParentInfoData {
   fullName: string;
@@ -16,6 +18,7 @@ interface ParentInfoData {
 
 export default function ParentInfoForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const [formData, setFormData] = useState<ParentInfoData>({
     fullName: "",
     phone: "",
@@ -52,20 +55,32 @@ export default function ParentInfoForm() {
     
     for (const field of requiredFields) {
       if (!formData[field].trim()) {
-        alert(`Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+        toast({
+          title: "Missing required field",
+          description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
+          variant: "destructive"
+        });
         return false;
       }
     }
 
     const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
     if (!panRegex.test(formData.panCardNumber)) {
-      alert("Please enter a valid PAN card number (e.g., ABCDE1234F)");
+      toast({
+        title: "Invalid PAN card number",
+        description: "Please enter a valid PAN card number (e.g., ABCDE1234F)",
+        variant: "destructive"
+      });
       return false;
     }
 
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(formData.phone)) {
-      alert("Please enter a valid 10-digit mobile number");
+      toast({
+        title: "Invalid phone number",
+        description: "Please enter a valid 10-digit mobile number",
+        variant: "destructive"
+      });
       return false;
     }
 
@@ -81,7 +96,10 @@ export default function ParentInfoForm() {
 
   const handleSaveAndExit = () => {
     saveProgress();
-    alert("Your progress has been saved. You can continue later from your dashboard.");
+    toast({
+      title: "Progress saved",
+      description: "Your progress has been saved. You can continue later from your dashboard."
+    });
     router.push("/dashboard/parent");
   };
 

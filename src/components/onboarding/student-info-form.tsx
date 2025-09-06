@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Textarea } from "~/components/ui/textarea";
+import { useToast } from "~/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 interface StudentInfoData {
   studentName: string;
@@ -19,6 +22,7 @@ interface StudentInfoData {
 
 export default function StudentInfoForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const [formData, setFormData] = useState<StudentInfoData>({
     studentName: "",
     studentRollNumber: "",
@@ -36,7 +40,11 @@ export default function StudentInfoForm() {
     // Check if Step 1 is completed
     const parentInfoData = localStorage.getItem('onboarding-parent-info');
     if (!parentInfoData) {
-      alert("Please complete Step 1 first");
+      toast({
+        title: "Please complete Step 1 first",
+        description: "You need to complete the parent information step before proceeding.",
+        variant: "destructive"
+      });
       router.push("/onboarding/parent/steps/1");
       return;
     }
@@ -67,7 +75,11 @@ export default function StudentInfoForm() {
     
     for (const field of requiredFields) {
       if (!formData[field].trim()) {
-        alert(`Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+        toast({
+          title: "Missing required field",
+          description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
+          variant: "destructive"
+        });
         return false;
       }
     }
@@ -110,11 +122,18 @@ export default function StudentInfoForm() {
       localStorage.removeItem('onboarding-additional-info');
       localStorage.removeItem('onboarding-student-info');
 
-      alert("Onboarding completed successfully! Welcome to MyFee.");
+      toast({
+        title: "Onboarding completed successfully!",
+        description: "Welcome to MyFee. You can now access your dashboard.",
+      });
       router.push("/dashboard/parent");
     } catch (error) {
       console.error("Error completing onboarding:", error);
-      alert(error instanceof Error ? error.message : "Failed to save information. Please try again.");
+      toast({
+        title: "Error completing onboarding",
+        description: error instanceof Error ? error.message : "Failed to save information. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setSubmitting(false);
     }
@@ -127,7 +146,10 @@ export default function StudentInfoForm() {
 
   const handleSaveAndExit = () => {
     saveProgress();
-    alert("Your progress has been saved. You can continue later from your dashboard.");
+    toast({
+      title: "Progress saved",
+      description: "Your progress has been saved. You can continue later from your dashboard.",
+    });
     router.push("/dashboard/parent");
   };
 
@@ -135,8 +157,8 @@ export default function StudentInfoForm() {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -235,12 +257,11 @@ export default function StudentInfoForm() {
 
           <div className="space-y-2 mt-6">
             <Label htmlFor="institutionAddress">Institution Address</Label>
-            <textarea
+            <Textarea
               id="institutionAddress"
               value={formData.institutionAddress}
               onChange={(e) => handleInputChange("institutionAddress", e.target.value)}
               placeholder="Complete address of the school or college"
-              className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
               rows={3}
             />
           </div>
@@ -297,10 +318,7 @@ export default function StudentInfoForm() {
             >
               {submitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Completing Setup...
                 </>
               ) : (

@@ -10,5 +10,6 @@ export default async function ParentOnboarding() {
     redirect("/login/parent");
   }
 
-  return <OnboardingForm />;
+  // Redirect to the multi-step onboarding flow
+  redirect("/onboarding/parent/steps/1");
 }

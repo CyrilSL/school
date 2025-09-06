@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
 import { Button } from "~/components/ui/button";
 import OnboardingChecker from "~/components/onboarding-checker";
+import ResumeOnboarding from "~/components/resume-onboarding";
 
 interface Student {
   id: string;
@@ -58,6 +59,7 @@ export default async function ParentDashboard() {
   return (
     <div className="container mx-auto p-6">
       <OnboardingChecker />
+      <ResumeOnboarding />
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Parent Dashboard</h1>
         <p className="text-gray-600">Welcome, {session.user?.name}</p>

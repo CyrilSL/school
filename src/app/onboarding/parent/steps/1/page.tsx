@@ -1,33 +1,32 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
-import ParentInfoForm from "~/components/onboarding/parent-info-form";
+import StudentDetailsForm from "~/components/onboarding/student-details-form";
 import OnboardingProgress from "~/components/onboarding-progress";
 
-export default async function ParentInfoStep() {
+export default async function StudentDetailsStep() {
   const session = await getServerSession();
   
   if (!session?.user) {
     redirect("/login/parent");
   }
 
-  const stepTitles = ["Parent Info", "Additional Info", "Student Info"];
+  const stepTitles = ["Student Details", "EMI Plan", "Parent PAN", "Intro", "Personal Details", "Confirmation"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-8">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-2">Welcome to MyFee</h1>
-          <p className="text-blue-100 text-lg">Let's set up your parent profile</p>
+          <h1 className="text-2xl font-semibold mb-1">Let's start with your child's information</h1>
         </div>
       </div>
 
       {/* Progress Indicator */}
-      <OnboardingProgress currentStep={1} totalSteps={3} stepTitles={stepTitles} />
+      <OnboardingProgress currentStep={1} totalSteps={6} stepTitles={stepTitles} />
 
       {/* Form */}
       <div className="p-8">
-        <ParentInfoForm />
+        <StudentDetailsForm />
       </div>
 
       {/* Footer */}

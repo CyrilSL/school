@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
-import ParentPanForm from "~/components/onboarding/parent-pan-form";
+import PersonalDetailsForm from "~/components/onboarding/personal-details-form";
 import OnboardingProgress from "~/components/onboarding-progress";
 
-export default async function ParentPanStep() {
+export default async function PersonalDetailsStep() {
   const session = await getServerSession();
   
   if (!session?.user) {
@@ -15,18 +15,18 @@ export default async function ParentPanStep() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4">
+      <div className="bg-gradient-to-r from-green-600 to-teal-700 text-white p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-1">Primary earning member information</h1>
+          <h1 className="text-2xl font-semibold mb-1">Complete your personal information for loan approval</h1>
         </div>
       </div>
 
       {/* Progress Indicator */}
-      <OnboardingProgress currentStep={3} totalSteps={6} stepTitles={stepTitles} />
+      <OnboardingProgress currentStep={5} totalSteps={6} stepTitles={stepTitles} />
 
       {/* Form */}
       <div className="p-8">
-        <ParentPanForm />
+        <PersonalDetailsForm />
       </div>
 
       {/* Footer */}

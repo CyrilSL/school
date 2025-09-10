@@ -209,10 +209,20 @@ export const student = createTable("student", {
   institutionId: text("institution_id")
     .notNull()
     .references(() => institution.id),
-  name: text("name").notNull(),
-  rollNumber: text("roll_number"),
-  class: text("class"),
-  section: text("section"),
+  
+  // Step 1: Student Details
+  name: text("name").notNull(), // studentName
+  rollNumber: text("roll_number"), // studentRollNumber
+  dateOfBirth: timestamp("date_of_birth"), // studentDateOfBirth
+  class: text("class"), // studentClass
+  section: text("section"), // studentSection
+  previousSchool: text("previous_school"), // previousSchool
+  
+  // Fee Information
+  feeAmount: decimal("fee_amount", { precision: 10, scale: 2 }), // feeAmount
+  feeType: text("fee_type"), // feeType (Tuition, Annual, etc.)
+  
+  // System fields
   admissionDate: timestamp("admission_date"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").notNull(),
@@ -290,16 +300,44 @@ export const parentProfile = createTable("parent_profile", {
     .notNull()
     .references(() => user.id)
     .unique(),
-  fullName: text("full_name"),
-  phone: text("phone"),
-  address: text("address"),
-  panCardNumber: text("pan_card_number"),
-  alternateEmail: text("alternate_email"),
+  
+  // Step 3: Parent PAN Details
+  fullName: text("full_name"), // parentName
+  panCardNumber: text("pan_card_number"), // parentPan
+  phone: text("phone"), // parentPhone
+  email: text("email"), // parentEmail
+  address: text("address"), // parentAddress
+  relationToStudent: text("relation_to_student"), // Father, Mother, Guardian, etc.
+  monthlyIncome: text("monthly_income"), // Income range selection
   occupation: text("occupation"),
+  employer: text("employer"),
+  
+  // Step 5: Personal Details
+  applicantPan: text("applicant_pan"), // Same as parentPan usually
+  gender: text("gender"),
+  dateOfBirth: timestamp("date_of_birth"),
+  maritalStatus: text("marital_status"),
+  alternateEmail: text("alternate_email"), // if different from main email
+  alternatePhone: text("alternate_phone"),
+  fatherName: text("father_name"),
+  motherName: text("mother_name"),
+  spouseName: text("spouse_name"),
+  educationLevel: text("education_level"),
+  workExperience: text("work_experience"),
+  companyType: text("company_type"),
+  
+  // Legacy fields (kept for backward compatibility)
   annualIncome: decimal("annual_income", { precision: 12, scale: 2 }),
   emergencyContactName: text("emergency_contact_name"),
   emergencyContactPhone: text("emergency_contact_phone"),
-  relationToStudent: text("relation_to_student"), // Father, Mother, Guardian, etc.
+  
+  // Step 6: Terms & Confirmation
+  termsAccepted: boolean("terms_accepted").default(false),
+  privacyAccepted: boolean("privacy_accepted").default(false),
+  creditCheckConsent: boolean("credit_check_consent").default(false),
+  communicationConsent: boolean("communication_consent").default(false),
+  
+  // System fields
   isOnboardingCompleted: boolean("is_onboarding_completed").default(false),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(

@@ -27,6 +27,7 @@ export default function ParentInfoForm() {
     relationToStudent: "",
   });
   const [loading, setLoading] = useState(true);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     // Load saved data from localStorage or API
@@ -36,6 +37,10 @@ export default function ParentInfoForm() {
     }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    setIsFormValid(validateForm());
+  }, [formData]);
 
   const handleInputChange = (field: keyof ParentInfoData, value: string) => {
     setFormData(prev => ({
@@ -55,32 +60,17 @@ export default function ParentInfoForm() {
     
     for (const field of requiredFields) {
       if (!formData[field].trim()) {
-        toast({
-          title: "Missing required field",
-          description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
-          variant: "destructive"
-        });
         return false;
       }
     }
 
     const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
     if (!panRegex.test(formData.panCardNumber)) {
-      toast({
-        title: "Invalid PAN card number",
-        description: "Please enter a valid PAN card number (e.g., ABCDE1234F)",
-        variant: "destructive"
-      });
       return false;
     }
 
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!phoneRegex.test(formData.phone)) {
-      toast({
-        title: "Invalid phone number",
-        description: "Please enter a valid 10-digit mobile number",
-        variant: "destructive"
-      });
       return false;
     }
 
@@ -220,7 +210,8 @@ export default function ParentInfoForm() {
             <Button
               type="button"
               onClick={handleNext}
-              className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 px-8"
+              disabled={!isFormValid}
+              className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next: Additional Info
               <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

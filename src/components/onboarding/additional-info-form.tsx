@@ -26,6 +26,7 @@ export default function AdditionalInfoForm() {
     emergencyContactPhone: "",
   });
   const [loading, setLoading] = useState(true);
+  const [isFormValid, setIsFormValid] = useState(true); // Optional form, so valid by default
 
   useEffect(() => {
     // Check if Step 1 is completed
@@ -48,6 +49,10 @@ export default function AdditionalInfoForm() {
     setLoading(false);
   }, [router]);
 
+  useEffect(() => {
+    setIsFormValid(validateForm());
+  }, [formData]);
+
   const handleInputChange = (field: keyof AdditionalInfoData, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -67,20 +72,10 @@ export default function AdditionalInfoForm() {
 
   const validateForm = () => {
     if (formData.emergencyContactPhone && !validatePhone(formData.emergencyContactPhone)) {
-      toast({
-        title: "Invalid emergency contact number",
-        description: "Please enter a valid emergency contact number",
-        variant: "destructive"
-      });
       return false;
     }
 
     if (formData.alternateEmail && !/\S+@\S+\.\S+/.test(formData.alternateEmail)) {
-      toast({
-        title: "Invalid email address",
-        description: "Please enter a valid email address",
-        variant: "destructive"
-      });
       return false;
     }
 
@@ -254,7 +249,8 @@ export default function AdditionalInfoForm() {
             <Button
               type="button"
               onClick={handleNext}
-              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-8"
+              disabled={!isFormValid}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next: Student Info
               <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

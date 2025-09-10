@@ -41,6 +41,7 @@ export default function PersonalDetailsForm() {
     companyType: "",
   });
   const [loading, setLoading] = useState(true);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     // Check if previous steps are completed
@@ -76,6 +77,10 @@ export default function PersonalDetailsForm() {
     setLoading(false);
   }, [router]);
 
+  useEffect(() => {
+    setIsFormValid(validateForm());
+  }, [formData]);
+
   const handleInputChange = (field: keyof PersonalDetailsData, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -95,11 +100,6 @@ export default function PersonalDetailsForm() {
     
     for (const field of requiredFields) {
       if (!formData[field].trim()) {
-        toast({
-          title: "Missing required field",
-          description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
-          variant: "destructive"
-        });
         return false;
       }
     }
@@ -107,42 +107,22 @@ export default function PersonalDetailsForm() {
     // Validate PAN format
     const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
     if (!panRegex.test(formData.applicantPan)) {
-      toast({
-        title: "Invalid PAN number",
-        description: "Please enter a valid PAN number (e.g., ABCDE1234F)",
-        variant: "destructive"
-      });
       return false;
     }
 
     // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      toast({
-        title: "Invalid email address",
-        description: "Please enter a valid email address",
-        variant: "destructive"
-      });
       return false;
     }
 
     // Validate alternate phone if provided
     if (formData.alternatePhone && !/^[6-9]\d{9}$/.test(formData.alternatePhone)) {
-      toast({
-        title: "Invalid alternate phone number",
-        description: "Please enter a valid 10-digit mobile number",
-        variant: "destructive"
-      });
       return false;
     }
 
     // Check if spouse name is required
     if (formData.maritalStatus === "Married" && !formData.spouseName.trim()) {
-      toast({
-        title: "Spouse name required",
-        description: "Please enter your spouse's name as you're married",
-        variant: "destructive"
-      });
       return false;
     }
 
@@ -426,7 +406,8 @@ export default function PersonalDetailsForm() {
             <Button
               type="button"
               onClick={handleNext}
-              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8"
+              disabled={!isFormValid}
+              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Final Step: Confirmation
               <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

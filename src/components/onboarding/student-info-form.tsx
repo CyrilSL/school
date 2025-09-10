@@ -35,6 +35,7 @@ export default function StudentInfoForm() {
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     // Check if Step 1 is completed
@@ -57,6 +58,10 @@ export default function StudentInfoForm() {
     setLoading(false);
   }, [router]);
 
+  useEffect(() => {
+    setIsFormValid(validateForm());
+  }, [formData]);
+
   const handleInputChange = (field: keyof StudentInfoData, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -75,11 +80,6 @@ export default function StudentInfoForm() {
     
     for (const field of requiredFields) {
       if (!formData[field].trim()) {
-        toast({
-          title: "Missing required field",
-          description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
-          variant: "destructive"
-        });
         return false;
       }
     }
@@ -313,7 +313,7 @@ export default function StudentInfoForm() {
             <Button
               type="button"
               onClick={handleComplete}
-              disabled={submitting}
+              disabled={submitting || !isFormValid}
               className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 px-8 py-3 text-white font-semibold rounded-lg shadow-lg transform transition duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {submitting ? (

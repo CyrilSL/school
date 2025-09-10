@@ -21,6 +21,7 @@ export default function PrimaryEarnerForm() {
     lastName: "",
   });
   const [loading, setLoading] = useState(true);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     // Check if previous steps are completed
@@ -46,6 +47,10 @@ export default function PrimaryEarnerForm() {
     setLoading(false);
   }, [router]);
 
+  useEffect(() => {
+    setIsFormValid(validateForm());
+  }, [formData]);
+
   const handleInputChange = (field: keyof PrimaryEarnerData, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -59,11 +64,6 @@ export default function PrimaryEarnerForm() {
 
   const validateForm = () => {
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      toast({
-        title: "Missing required fields",
-        description: "Please fill in both first and last name",
-        variant: "destructive"
-      });
       return false;
     }
     return true;
@@ -157,17 +157,6 @@ export default function PrimaryEarnerForm() {
             </p>
           </div>
         </div>
-
-        {/* Credit Score Disclaimer */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="text-sm text-green-800">
-            <p>
-              <strong>Privacy Notice:</strong> By proceeding, you allow affiliated banking partners 
-              to fetch details from our partner bureau. Your credit score will 
-              <strong> not be impacted</strong> by this.
-            </p>
-          </div>
-        </div>
         </div>
       </div>
 
@@ -196,7 +185,8 @@ export default function PrimaryEarnerForm() {
           
           <Button
             onClick={handleProceed}
-            className="bg-gradient-to-r from-purple-600 to-pink-700 hover:from-purple-700 hover:to-pink-800 px-8"
+            disabled={!isFormValid}
+            className="bg-gradient-to-r from-purple-600 to-pink-700 hover:from-purple-700 hover:to-pink-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next: Welcome
             <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

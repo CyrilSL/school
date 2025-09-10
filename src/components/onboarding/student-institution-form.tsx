@@ -38,6 +38,7 @@ export default function StudentInstitutionForm() {
   });
   const [loading, setLoading] = useState(true);
   const [showStudentForm, setShowStudentForm] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     // Load saved data
@@ -52,6 +53,10 @@ export default function StudentInstitutionForm() {
     }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    setIsFormValid(validateForm());
+  }, [formData]);
 
   const handleInputChange = (field: keyof StudentInstitutionData, value: string) => {
     setFormData(prev => ({
@@ -97,22 +102,12 @@ export default function StudentInstitutionForm() {
     
     for (const field of requiredFields) {
       if (!formData[field].trim()) {
-        toast({
-          title: "Missing required field",
-          description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
-          variant: "destructive"
-        });
         return false;
       }
     }
 
     const feeAmount = parseFloat(formData.annualFeeAmount);
     if (isNaN(feeAmount) || feeAmount <= 0) {
-      toast({
-        title: "Invalid fee amount",
-        description: "Please enter a valid fee amount",
-        variant: "destructive"
-      });
       return false;
     }
 
@@ -355,16 +350,6 @@ export default function StudentInstitutionForm() {
                 </div>
               </div>
 
-              {/* Show Plans Button */}
-              <div className="pt-6">
-                <Button
-                  onClick={handleShowPlans}
-                  className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
-                  size="lg"
-                >
-                  Show Plans
-                </Button>
-              </div>
             </div>
           )}
         </div>
@@ -390,6 +375,17 @@ export default function StudentInstitutionForm() {
             onClick={() => router.push("/login/parent")}
           >
             Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleShowPlans}
+            disabled={!isFormValid}
+            className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </Button>
         </div>
       </div>

@@ -1,32 +1,35 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
-import ParentPanForm from "~/components/onboarding/parent-pan-form";
+import PrimaryEarnerForm from "~/components/onboarding/primary-earner-form";
 import OnboardingProgress from "~/components/onboarding-progress";
 
-export default async function ParentPanStep() {
+export default async function PrimaryEarnerStep() {
   const session = await getServerSession();
   
   if (!session?.user) {
     redirect("/login/parent");
   }
 
-  const stepTitles = ["Student Details", "EMI Plan", "Parent PAN", "Intro", "Personal Details", "Confirmation"];
+  const stepTitles = ["Student & Fee Details", "EMI Plan Selection", "Primary Earner", "Welcome", "Personal Details"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-1">Primary earning member information</h1>
+          <h1 className="text-2xl font-semibold mb-1">Primary Earner Details</h1>
+          <p className="text-blue-100">We need details of the primary earning member</p>
         </div>
       </div>
 
       {/* Progress Indicator */}
-      <OnboardingProgress currentStep={3} totalSteps={6} stepTitles={stepTitles} />
+      <OnboardingProgress currentStep={3} totalSteps={5} stepTitles={stepTitles} />
 
       {/* Form */}
       <div className="p-8">
-        <ParentPanForm />
+        <div className="max-w-2xl mx-auto">
+          <PrimaryEarnerForm />
+        </div>
       </div>
 
       {/* Footer */}

@@ -1,32 +1,35 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
-import EmiPlanForm from "~/components/onboarding/emi-plan-form";
+import EmiPlanSelectionForm from "~/components/onboarding/emi-plan-selection-form";
 import OnboardingProgress from "~/components/onboarding-progress";
 
-export default async function EmiPlanStep() {
+export default async function EmiPlanSelectionStep() {
   const session = await getServerSession();
   
   if (!session?.user) {
     redirect("/login/parent");
   }
 
-  const stepTitles = ["Student Details", "EMI Plan", "Parent PAN", "Intro", "Personal Details", "Confirmation"];
+  const stepTitles = ["Student & Fee Details", "EMI Plan Selection", "Primary Earner", "Welcome", "Personal Details"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-1">Choose the best payment plan for you</h1>
+          <h1 className="text-2xl font-semibold mb-1">EMI Plan Selection</h1>
+          <p className="text-blue-100">Choose the best payment plan for you</p>
         </div>
       </div>
 
       {/* Progress Indicator */}
-      <OnboardingProgress currentStep={2} totalSteps={6} stepTitles={stepTitles} />
+      <OnboardingProgress currentStep={2} totalSteps={5} stepTitles={stepTitles} />
 
       {/* Form */}
       <div className="p-8">
-        <EmiPlanForm />
+        <div className="max-w-6xl mx-auto">
+          <EmiPlanSelectionForm />
+        </div>
       </div>
 
       {/* Footer */}

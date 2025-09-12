@@ -11,7 +11,13 @@ const ResetPasswordEmailTemplate = ({ inviteLink }: { inviteLink: string }) =>
 const VerificationEmailTemplate = ({ inviteLink }: { inviteLink: string }) => 
   `<div>Click here to verify your account: <a href="${inviteLink}">Verify Account</a></div>`;
 
-export const resend = new Resend(env.RESERND_API_KEY);
+// Initialize Resend only when needed (lazy initialization)
+const getResendClient = () => {
+  if (!env.RESERND_API_KEY) {
+    throw new Error("RESERND_API_KEY is not configured");
+  }
+  return new Resend(env.RESERND_API_KEY);
+};
 
 export const sendVerificationEmail = async ({
   email,
@@ -20,6 +26,7 @@ export const sendVerificationEmail = async ({
   email: string;
   verificationUrl: string;
 }) => {
+  const resend = getResendClient();
   return await resend.emails.send({
     from: env.EMAIL_FROM,
     to: [email],
@@ -35,6 +42,7 @@ export const sendResetPasswordEmail = async ({
   email: string;
   verificationUrl: string;
 }) => {
+  const resend = getResendClient();
   return await resend.emails.send({
     from: env.EMAIL_FROM,
     to: [email],
@@ -50,6 +58,7 @@ export const sendChangeEmailVerification = async ({
   email: string;
   verificationUrl: string;
 }) => {
+  const resend = getResendClient();
   return await resend.emails.send({
     from: env.EMAIL_FROM,
     to: [email],

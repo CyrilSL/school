@@ -1,8 +1,6 @@
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { openAPI, admin, organization } from "better-auth/plugins";
-import { headers } from "next/headers";
-import { cache } from "react";
 import { env } from "~/env";
 import {
   sendChangeEmailVerification,
@@ -87,12 +85,25 @@ export const auth = betterAuth({
   },
 } satisfies BetterAuthOptions);
 
-export const getServerSession = cache(
-  async () =>
-    await auth.api.getSession({
-      headers: await headers(),
-    }),
-);
+// Server session utility - use auth.api.getSession directly in your API routes/server components
+export const getSession = auth.api.getSession;
+
+// For App Router server components - this should be called in server components with headers
+export async function getServerSession() {
+  try {
+    // Try to import headers dynamically for server components
+    const { headers } = await import("next/headers");
+    const headersList = await headers();
+    
+    return await auth.api.getSession({
+      headers: headersList,
+    });
+  } catch (error) {
+    // If headers are not available or session fails, return null session
+    console.error("Failed to get server session:", error);
+    return { session: null, user: null };
+  }
+}
 
 export type Session = typeof auth.$Infer.Session;
 export type AuthUserType = Session["user"];

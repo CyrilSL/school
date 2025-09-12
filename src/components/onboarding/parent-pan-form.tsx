@@ -44,12 +44,7 @@ export default function ParentPanForm() {
     
     if (!studentDetailsData || !emiPlanData) {
       toast({
-        title: "Please complete previous steps",
-        description: "You need to complete the previous steps before proceeding.",
-        variant: "destructive"
-      });
-      router.push("/onboarding/parent/steps/1");
-      return;
+    // Validation removed - allow direct access to all steps
     }
 
     // Load saved data

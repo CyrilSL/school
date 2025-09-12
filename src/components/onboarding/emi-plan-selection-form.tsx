@@ -20,6 +20,7 @@ interface EmiPlan {
 }
 
 export default function EmiPlanSelectionForm() {
+  console.log("🚀 EMI PLAN SELECTION FORM COMPONENT MOUNTED!");
   const router = useRouter();
   const { toast } = useToast();
   const [selectedPlanId, setSelectedPlanId] = useState<string>("");
@@ -28,44 +29,49 @@ export default function EmiPlanSelectionForm() {
   const [feeAmount, setFeeAmount] = useState<number>(0);
 
   useEffect(() => {
-    // Check if previous step is completed
+    // Load data from previous step
     const studentData = localStorage.getItem('onboarding-student-institution');
+    
     if (!studentData) {
-      toast({
-        title: "Please complete previous step",
-        description: "You need to complete the student details first.",
-        variant: "destructive"
-      });
-      router.push("/onboarding/parent/steps/1");
+      // If no data, just use defaults
+      setLoading(false);
       return;
     }
 
-    const parsedData = JSON.parse(studentData);
+    let parsedData;
+    try {
+      parsedData = JSON.parse(studentData);
+    } catch (e) {
+      // If data is corrupted, just use defaults
+      setLoading(false);
+      return;
+    }
+    
     const amount = parseFloat(parsedData.annualFeeAmount || "0");
     
     if (amount <= 0) {
-      toast({
-        title: "Invalid fee amount",
-        description: "Please go back and enter a valid fee amount.",
-        variant: "destructive"
-      });
-      router.push("/onboarding/parent/steps/1");
+      // If no valid amount, just use defaults
+      setLoading(false);
       return;
     }
 
     setFeeAmount(amount);
     
     // Generate EMI plans based on fee amount (similar to competitor structure)
+    console.log("Generating EMI plans for amount:", amount);
     const plans = generateEmiPlans(amount);
+    console.log("Generated plans:", plans);
     setEmiPlans(plans);
 
     // Load saved selection
     const savedData = localStorage.getItem('onboarding-emi-plan');
     if (savedData) {
       const parsed = JSON.parse(savedData);
+      console.log("Loading saved EMI plan selection:", parsed);
       setSelectedPlanId(parsed.selectedPlanId);
     }
     
+    console.log("Step 2 setup complete, setting loading to false");
     setLoading(false);
   }, [router]);
 

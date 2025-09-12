@@ -15,40 +15,36 @@ export default function OnboardingIntroForm() {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
 
   useEffect(() => {
-    // Check if previous steps are completed
-    const studentDetailsData = localStorage.getItem('onboarding-student-details');
-    const emiPlanData = localStorage.getItem('onboarding-emi-plan');
-    const parentPanData = localStorage.getItem('onboarding-parent-pan');
-    
-    if (!studentDetailsData || !emiPlanData || !parentPanData) {
-      toast({
-        title: "Please complete previous steps",
-        description: "You need to complete the previous steps before proceeding.",
-        variant: "destructive"
-      });
-      router.push("/onboarding/parent/steps/1");
-      return;
+    // Try to load data for display, but don't redirect if missing
+    try {
+      const studentDetailsData = localStorage.getItem('onboarding-student-details') || localStorage.getItem('onboarding-student-institution');
+      const emiPlanData = localStorage.getItem('onboarding-emi-plan');
+      
+      if (studentDetailsData && emiPlanData) {
+        const studentData = JSON.parse(studentDetailsData);
+        const emiData = JSON.parse(emiPlanData);
+        
+        setStudentName(studentData.studentName || studentData.studentFirstName || "your child");
+        
+        // Get selected EMI plan details
+        const feeAmount = parseFloat(studentData.feeAmount || studentData.annualFeeAmount || "0");
+        const planId = emiData.selectedPlanId;
+        const planMap: any = {
+          "plan-a": { duration: 9, emi: Math.ceil(feeAmount / 9) },
+          "plan-b": { duration: 6, emi: Math.ceil(feeAmount / 6) },
+          "plan-c": { duration: 3, emi: Math.ceil(feeAmount / 3) },
+          "plan-d": { duration: 12, emi: Math.ceil(feeAmount / 12) },
+          "plan-e": { duration: 18, emi: Math.ceil(feeAmount / 18) },
+        };
+        
+        setSelectedPlan(planMap[planId] || { duration: 6, emi: Math.ceil(feeAmount / 6) });
+      }
+    } catch (error) {
+      console.log("Could not load onboarding data for display:", error);
     }
-
-    // Extract data for display
-    const studentData = JSON.parse(studentDetailsData);
-    const emiData = JSON.parse(emiPlanData);
     
-    setStudentName(studentData.studentName || "your child");
-    
-    // Get selected EMI plan details
-    const feeAmount = parseFloat(studentData.feeAmount || "0");
-    const planId = emiData.selectedPlanId;
-    const planMap: any = {
-      "3-months": { duration: 3, emi: Math.ceil(feeAmount / 3) },
-      "6-months": { duration: 6, emi: Math.ceil(feeAmount / 6) },
-      "9-months": { duration: 9, emi: Math.ceil(feeAmount / 9) },
-      "12-months": { duration: 12, emi: Math.ceil(feeAmount / 12) },
-    };
-    
-    setSelectedPlan(planMap[planId] || null);
     setLoading(false);
-  }, [router]);
+  }, []);
 
   const handleNext = () => {
     router.push("/onboarding/parent/steps/5");

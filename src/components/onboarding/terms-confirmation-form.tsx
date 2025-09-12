@@ -37,12 +37,7 @@ export default function TermsConfirmationForm() {
     
     if (!studentDetailsData || !emiPlanData || !parentPanData || !personalDetailsData) {
       toast({
-        title: "Please complete all previous steps",
-        description: "You need to complete all previous steps before proceeding.",
-        variant: "destructive"
-      });
-      router.push("/onboarding/parent/steps/1");
-      return;
+    // Validation removed - allow direct access to all steps
     }
 
     // Build application summary

@@ -50,6 +50,10 @@ export default function StudentInstitutionForm() {
       if (parsed.institutionName && parsed.academicYear) {
         setShowStudentForm(true);
       }
+      // Validate immediately after loading data
+      setTimeout(() => {
+        setIsFormValid(validateForm());
+      }, 0);
     }
     setLoading(false);
   }, []);
@@ -96,12 +100,13 @@ export default function StudentInstitutionForm() {
 
   const validateForm = () => {
     const requiredFields: (keyof StudentInstitutionData)[] = [
-      "institutionName", "studentFirstName", "studentLastName", 
+      "institutionName", "academicYear", "studentFirstName", "studentLastName", 
       "admissionType", "classStream", "annualFeeAmount"
     ];
     
     for (const field of requiredFields) {
-      if (!formData[field].trim()) {
+      const value = formData[field].trim();
+      if (!value) {
         return false;
       }
     }

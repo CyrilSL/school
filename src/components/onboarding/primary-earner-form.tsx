@@ -24,20 +24,6 @@ export default function PrimaryEarnerForm() {
   const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
-    // Check if previous steps are completed
-    const studentData = localStorage.getItem('onboarding-student-institution');
-    const emiData = localStorage.getItem('onboarding-emi-plan');
-    
-    if (!studentData || !emiData) {
-      toast({
-        title: "Please complete previous steps",
-        description: "You need to complete the previous steps before proceeding.",
-        variant: "destructive"
-      });
-      router.push("/onboarding/parent/steps/1");
-      return;
-    }
-
     // Load saved data
     const savedData = localStorage.getItem('onboarding-primary-earner');
     if (savedData) {
@@ -45,7 +31,7 @@ export default function PrimaryEarnerForm() {
     }
     
     setLoading(false);
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     setIsFormValid(validateForm());
@@ -72,7 +58,10 @@ export default function PrimaryEarnerForm() {
   const handleProceed = () => {
     if (!validateForm()) return;
     
+    // Save progress to localStorage for now
     saveProgress();
+    
+    // Navigate to next step
     router.push("/onboarding/parent/steps/4");
   };
 

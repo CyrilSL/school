@@ -42,6 +42,7 @@ export default function PersonalDetailsForm() {
   });
   const [loading, setLoading] = useState(true);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     // Check if previous steps are completed
@@ -125,11 +126,65 @@ export default function PersonalDetailsForm() {
     return true;
   };
 
-  const handleNext = () => {
+  const saveToDatabase = async () => {
+    try {
+      const response = await fetch("/api/parent/onboarding/partial", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          step: 5,
+          data: {
+            applicantPan: formData.applicantPan,
+            gender: formData.gender,
+            dateOfBirth: formData.dateOfBirth,
+            maritalStatus: formData.maritalStatus,
+            email: formData.email,
+            alternatePhone: formData.alternatePhone,
+            fatherName: formData.fatherName,
+            motherName: formData.motherName,
+            spouseName: formData.spouseName,
+            educationLevel: formData.educationLevel,
+            workExperience: formData.workExperience,
+            companyType: formData.companyType,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to save data");
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error saving to database:", error);
+      toast({
+        title: "Error saving data",
+        description: error instanceof Error ? error.message : "Failed to save progress to database",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const handleNext = async () => {
     if (!validateForm()) return;
-    
+
+    setIsSaving(true);
+
+    // Save to localStorage (keep existing functionality)
     saveProgress();
-    router.push("/onboarding/parent/steps/6");
+
+    // Save to database
+    const saved = await saveToDatabase();
+
+    setIsSaving(false);
+
+    if (saved) {
+      router.push("/onboarding/parent/steps/6");
+    }
   };
 
   const handleBack = () => {
@@ -402,13 +457,22 @@ export default function PersonalDetailsForm() {
             <Button
               type="button"
               onClick={handleNext}
-              disabled={!isFormValid}
+              disabled={!isFormValid || isSaving}
               className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Final Step: Confirmation
-              <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Final Step: Confirmation
+                  <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </>
+              )}
             </Button>
           </div>
         </div>

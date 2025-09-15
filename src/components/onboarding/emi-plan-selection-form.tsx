@@ -27,6 +27,7 @@ export default function EmiPlanSelectionForm() {
   const [loading, setLoading] = useState(true);
   const [emiPlans, setEmiPlans] = useState<EmiPlan[]>([]);
   const [feeAmount, setFeeAmount] = useState<number>(0);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     // Load data from previous step
@@ -137,7 +138,40 @@ export default function EmiPlanSelectionForm() {
     localStorage.setItem('onboarding-emi-plan', JSON.stringify(data));
   };
 
-  const handleProceed = () => {
+  const saveToDatabase = async () => {
+    try {
+      const response = await fetch("/api/parent/onboarding/partial", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          step: 2,
+          data: {
+            selectedPlanId,
+            feeAmount,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to save data");
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error saving to database:", error);
+      toast({
+        title: "Error saving data",
+        description: error instanceof Error ? error.message : "Failed to save progress to database",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const handleProceed = async () => {
     if (!selectedPlanId) {
       toast({
         title: "Please select an EMI plan",
@@ -146,9 +180,20 @@ export default function EmiPlanSelectionForm() {
       });
       return;
     }
-    
+
+    setIsSaving(true);
+
+    // Save to localStorage (keep existing functionality)
     saveProgress();
-    router.push("/onboarding/parent/steps/3");
+
+    // Save to database
+    const saved = await saveToDatabase();
+
+    setIsSaving(false);
+
+    if (saved) {
+      router.push("/onboarding/parent/steps/3");
+    }
   };
 
   const handleBack = () => {
@@ -273,13 +318,22 @@ export default function EmiPlanSelectionForm() {
           
           <Button
             onClick={handleProceed}
-            disabled={!selectedPlanId}
+            disabled={!selectedPlanId || isSaving}
             className="bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 px-8"
           >
-            Next: Primary Earner
-            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                Next: Primary Earner
+                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </>
+            )}
           </Button>
         </div>
       </div>

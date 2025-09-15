@@ -22,6 +22,7 @@ export default function PrimaryEarnerForm() {
   });
   const [loading, setLoading] = useState(true);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     // Load saved data
@@ -55,14 +56,57 @@ export default function PrimaryEarnerForm() {
     return true;
   };
 
-  const handleProceed = () => {
+  const saveToDatabase = async () => {
+    try {
+      const response = await fetch("/api/parent/onboarding/partial", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          step: 3,
+          data: {
+            fullName: `${formData.firstName} ${formData.lastName}`,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to save data");
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error saving to database:", error);
+      toast({
+        title: "Error saving data",
+        description: error instanceof Error ? error.message : "Failed to save progress to database",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const handleProceed = async () => {
     if (!validateForm()) return;
-    
+
+    setIsSaving(true);
+
     // Save progress to localStorage for now
     saveProgress();
-    
-    // Navigate to next step
-    router.push("/onboarding/parent/steps/4");
+
+    // Save to database
+    const saved = await saveToDatabase();
+
+    setIsSaving(false);
+
+    if (saved) {
+      // Navigate to next step
+      router.push("/onboarding/parent/steps/4");
+    }
   };
 
   const handleBack = () => {
@@ -174,13 +218,22 @@ export default function PrimaryEarnerForm() {
           
           <Button
             onClick={handleProceed}
-            disabled={!isFormValid}
+            disabled={!isFormValid || isSaving}
             className="bg-gradient-to-r from-purple-600 to-pink-700 hover:from-purple-700 hover:to-pink-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Next: Welcome
-            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                Next: Welcome
+                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </>
+            )}
           </Button>
         </div>
       </div>

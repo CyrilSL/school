@@ -2,50 +2,99 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
+import { Loader2 } from "lucide-react";
+
+interface OnboardingProgress {
+  isCompleted: boolean;
+  nextStep: number;
+  completedSteps: {
+    step1: boolean;
+    step2: boolean;
+    step3: boolean;
+    step4: boolean;
+    step5: boolean;
+  };
+  profile?: any;
+  student?: any;
+}
 
 export default function ResumeOnboarding() {
-  const [savedData, setSavedData] = useState<{
-    hasParentInfo: boolean;
-    hasAdditionalInfo: boolean;
-    hasStudentInfo: boolean;
-  } | null>(null);
+  const [progressData, setProgressData] = useState<OnboardingProgress | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const parentInfo = localStorage.getItem('onboarding-parent-info');
-    const additionalInfo = localStorage.getItem('onboarding-additional-info');
-    const studentInfo = localStorage.getItem('onboarding-student-info');
+    async function fetchOnboardingProgress() {
+      try {
+        const response = await fetch("/api/parent/onboarding/partial");
 
-    if (parentInfo || additionalInfo || studentInfo) {
-      setSavedData({
-        hasParentInfo: !!parentInfo,
-        hasAdditionalInfo: !!additionalInfo,
-        hasStudentInfo: !!studentInfo,
-      });
+        if (!response.ok) {
+          setLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+
+        // Only show resume component if there's partial progress (not complete, but some steps done)
+        if (!data.isCompleted && (data.completedSteps.step1 || data.completedSteps.step2 || data.completedSteps.step3 || data.completedSteps.step5)) {
+          setProgressData(data);
+        }
+      } catch (error) {
+        console.error("Error fetching onboarding progress:", error);
+      } finally {
+        setLoading(false);
+      }
     }
+
+    fetchOnboardingProgress();
   }, []);
 
-  if (!savedData) return null;
+  if (loading) {
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+        <div className="flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-600 mr-2" />
+          <span className="text-blue-800">Checking onboarding progress...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!progressData) return null;
 
   const getResumeLink = () => {
-    if (savedData.hasStudentInfo) return "/onboarding/parent/steps/3";
-    if (savedData.hasAdditionalInfo) return "/onboarding/parent/steps/2";
-    if (savedData.hasParentInfo) return "/onboarding/parent/steps/2";
-    return "/onboarding/parent/steps/1";
+    return `/onboarding/parent/steps/${progressData.nextStep}`;
   };
 
   const getProgressPercentage = () => {
+    const { completedSteps } = progressData;
     let completed = 0;
-    if (savedData.hasParentInfo) completed += 1;
-    if (savedData.hasAdditionalInfo) completed += 1;
-    if (savedData.hasStudentInfo) completed += 1;
-    return Math.round((completed / 3) * 100);
+    const total = 5; // Total steps (excluding step 4 which is just intro)
+
+    if (completedSteps.step1) completed += 1;
+    if (completedSteps.step2) completed += 1;
+    if (completedSteps.step3) completed += 1;
+    // step4 is intro, not counted
+    if (completedSteps.step5) completed += 1;
+
+    return Math.round((completed / (total - 1)) * 100); // -1 because step 4 doesn't count
+  };
+
+  const getCompletedStepsText = () => {
+    const { completedSteps } = progressData;
+    const steps = [];
+
+    if (completedSteps.step1) steps.push("Student Details");
+    if (completedSteps.step2) steps.push("EMI Plan");
+    if (completedSteps.step3) steps.push("Primary Earner");
+    if (completedSteps.step5) steps.push("Personal Details");
+
+    return steps.length > 0 ? steps.join(", ") : "Getting started";
   };
 
   const clearSavedData = () => {
-    localStorage.removeItem('onboarding-parent-info');
-    localStorage.removeItem('onboarding-additional-info');
-    localStorage.removeItem('onboarding-student-info');
-    setSavedData(null);
+    // Clear both localStorage and show confirmation
+    localStorage.clear();
+    setProgressData(null);
   };
 
   return (
@@ -61,10 +110,13 @@ export default function ResumeOnboarding() {
             Continue Your Onboarding
           </h3>
           <p className="text-blue-800 mb-4">
-            You have saved onboarding progress ({getProgressPercentage()}% complete). 
+            You have saved onboarding progress ({getProgressPercentage()}% complete).
             Would you like to continue where you left off?
           </p>
-          
+          <p className="text-sm text-blue-700 mb-4">
+            Completed: {getCompletedStepsText()}
+          </p>
+
           {/* Progress Indicator */}
           <div className="mb-4">
             <div className="flex justify-between text-sm text-blue-700 mb-2">
@@ -72,20 +124,23 @@ export default function ResumeOnboarding() {
               <span>{getProgressPercentage()}% Complete</span>
             </div>
             <div className="w-full bg-blue-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${getProgressPercentage()}%` }}
               />
             </div>
             <div className="flex justify-between text-xs text-blue-600 mt-2">
-              <span className={savedData.hasParentInfo ? "font-semibold" : ""}>
-                ✓ Parent Info {savedData.hasParentInfo ? "(Saved)" : ""}
+              <span className={progressData.completedSteps.step1 ? "font-semibold" : ""}>
+                {progressData.completedSteps.step1 ? "✓" : "○"} Student Details
               </span>
-              <span className={savedData.hasAdditionalInfo ? "font-semibold" : ""}>
-                {savedData.hasAdditionalInfo ? "✓" : "○"} Additional Info {savedData.hasAdditionalInfo ? "(Saved)" : ""}
+              <span className={progressData.completedSteps.step2 ? "font-semibold" : ""}>
+                {progressData.completedSteps.step2 ? "✓" : "○"} EMI Plan
               </span>
-              <span className={savedData.hasStudentInfo ? "font-semibold" : ""}>
-                {savedData.hasStudentInfo ? "✓" : "○"} Student Info {savedData.hasStudentInfo ? "(Saved)" : ""}
+              <span className={progressData.completedSteps.step3 ? "font-semibold" : ""}>
+                {progressData.completedSteps.step3 ? "✓" : "○"} Primary Earner
+              </span>
+              <span className={progressData.completedSteps.step5 ? "font-semibold" : ""}>
+                {progressData.completedSteps.step5 ? "✓" : "○"} Personal Details
               </span>
             </div>
           </div>

@@ -50,17 +50,18 @@ export default function PersonalDetailsForm() {
     const parentPanData = localStorage.getItem('onboarding-parent-pan');
     
     if (!studentDetailsData || !emiPlanData || !parentPanData) {
-      toast({
-    // Validation removed - allow direct access to all steps
+      // Validation removed - allow direct access to all steps
     }
 
     // Pre-populate with data from previous steps
-    const parentData = JSON.parse(parentPanData);
-    setFormData(prev => ({
-      ...prev,
-      applicantPan: parentData.parentPan || "",
-      email: parentData.parentEmail || "",
-    }));
+    if (parentPanData) {
+      const parentData = JSON.parse(parentPanData);
+      setFormData(prev => ({
+        ...prev,
+        applicantPan: parentData.parentPan || "",
+        email: parentData.parentEmail || "",
+      }));
+    }
 
     // Load saved data
     const savedData = localStorage.getItem('onboarding-personal-details');

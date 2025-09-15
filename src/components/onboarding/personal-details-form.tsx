@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { useToast } from "~/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
@@ -246,17 +247,16 @@ export default function PersonalDetailsForm() {
 
             <div className="space-y-2">
               <Label htmlFor="gender">Gender *</Label>
-              <select
-                id="gender"
-                value={formData.gender}
-                onChange={(e) => handleInputChange("gender", e.target.value)}
-                className="w-full h-12 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              >
-                <option value="">Select gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
+              <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Female">Female</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -273,18 +273,17 @@ export default function PersonalDetailsForm() {
 
             <div className="space-y-2">
               <Label htmlFor="maritalStatus">Marital Status *</Label>
-              <select
-                id="maritalStatus"
-                value={formData.maritalStatus}
-                onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
-                className="w-full h-12 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              >
-                <option value="">Select marital status</option>
-                <option value="Single">Single</option>
-                <option value="Married">Married</option>
-                <option value="Divorced">Divorced</option>
-                <option value="Widowed">Widowed</option>
-              </select>
+              <Select value={formData.maritalStatus} onValueChange={(value) => handleInputChange("maritalStatus", value)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select marital status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Single">Single</SelectItem>
+                  <SelectItem value="Married">Married</SelectItem>
+                  <SelectItem value="Divorced">Divorced</SelectItem>
+                  <SelectItem value="Widowed">Widowed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -358,56 +357,53 @@ export default function PersonalDetailsForm() {
 
             <div className="space-y-2">
               <Label htmlFor="educationLevel">Highest Education Level</Label>
-              <select
-                id="educationLevel"
-                value={formData.educationLevel}
-                onChange={(e) => handleInputChange("educationLevel", e.target.value)}
-                className="w-full h-12 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              >
-                <option value="">Select education level</option>
-                <option value="High School">High School</option>
-                <option value="Diploma">Diploma</option>
-                <option value="Bachelor's Degree">Bachelor's Degree</option>
-                <option value="Master's Degree">Master's Degree</option>
-                <option value="PhD">PhD</option>
-                <option value="Other">Other</option>
-              </select>
+              <Select value={formData.educationLevel} onValueChange={(value) => handleInputChange("educationLevel", value)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select education level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="High School">High School</SelectItem>
+                  <SelectItem value="Diploma">Diploma</SelectItem>
+                  <SelectItem value="Bachelor's Degree">Bachelor's Degree</SelectItem>
+                  <SelectItem value="Master's Degree">Master's Degree</SelectItem>
+                  <SelectItem value="PhD">PhD</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="workExperience">Work Experience</Label>
-              <select
-                id="workExperience"
-                value={formData.workExperience}
-                onChange={(e) => handleInputChange("workExperience", e.target.value)}
-                className="w-full h-12 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              >
-                <option value="">Select work experience</option>
-                <option value="0-2 years">0-2 years</option>
-                <option value="2-5 years">2-5 years</option>
-                <option value="5-10 years">5-10 years</option>
-                <option value="10-15 years">10-15 years</option>
-                <option value="15+ years">15+ years</option>
-              </select>
+              <Select value={formData.workExperience} onValueChange={(value) => handleInputChange("workExperience", value)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select work experience" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0-2 years">0-2 years</SelectItem>
+                  <SelectItem value="2-5 years">2-5 years</SelectItem>
+                  <SelectItem value="5-10 years">5-10 years</SelectItem>
+                  <SelectItem value="10-15 years">10-15 years</SelectItem>
+                  <SelectItem value="15+ years">15+ years</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="companyType">Company Type</Label>
-              <select
-                id="companyType"
-                value={formData.companyType}
-                onChange={(e) => handleInputChange("companyType", e.target.value)}
-                className="w-full h-12 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              >
-                <option value="">Select company type</option>
-                <option value="Government">Government</option>
-                <option value="Public Sector">Public Sector</option>
-                <option value="Private Limited">Private Limited</option>
-                <option value="MNC">MNC</option>
-                <option value="Self Employed">Self Employed</option>
-                <option value="Partnership">Partnership</option>
-                <option value="Proprietorship">Proprietorship</option>
-              </select>
+              <Select value={formData.companyType} onValueChange={(value) => handleInputChange("companyType", value)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select company type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Government">Government</SelectItem>
+                  <SelectItem value="Public Sector">Public Sector</SelectItem>
+                  <SelectItem value="Private Limited">Private Limited</SelectItem>
+                  <SelectItem value="MNC">MNC</SelectItem>
+                  <SelectItem value="Self Employed">Self Employed</SelectItem>
+                  <SelectItem value="Partnership">Partnership</SelectItem>
+                  <SelectItem value="Proprietorship">Proprietorship</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

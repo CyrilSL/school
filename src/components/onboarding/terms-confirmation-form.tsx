@@ -36,8 +36,9 @@ export default function TermsConfirmationForm() {
     const personalDetailsData = localStorage.getItem('onboarding-personal-details');
     
     if (!studentDetailsData || !emiPlanData || !parentPanData || !personalDetailsData) {
-      toast({
-    // Validation removed - allow direct access to all steps
+      // Validation removed - allow direct access to all steps
+      setLoading(false);
+      return;
     }
 
     // Build application summary

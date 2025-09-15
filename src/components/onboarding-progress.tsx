@@ -1,5 +1,7 @@
 "use client";
 
+import { Progress } from "~/components/ui/progress";
+
 interface OnboardingProgressProps {
   currentStep: number;
   totalSteps: number;
@@ -7,6 +9,8 @@ interface OnboardingProgressProps {
 }
 
 export default function OnboardingProgress({ currentStep, totalSteps, stepTitles }: OnboardingProgressProps) {
+  const progressValue = (currentStep / totalSteps) * 100;
+
   return (
     <div className="bg-white border-b border-gray-200 px-8 py-6">
       <div className="max-w-4xl mx-auto">
@@ -14,14 +18,9 @@ export default function OnboardingProgress({ currentStep, totalSteps, stepTitles
         <div className="mb-6">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>Step {currentStep} of {totalSteps}</span>
-            <span>{Math.round((currentStep / totalSteps) * 100)}% Complete</span>
+            <span>{Math.round(progressValue)}% Complete</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-blue-600 to-indigo-700 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-            />
-          </div>
+          <Progress value={progressValue} className="h-2" />
         </div>
 
         {/* Step Indicators */}

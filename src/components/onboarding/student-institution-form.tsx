@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { useToast } from "~/hooks/use-toast";
 import { Loader2, Search, MapPin, BookOpen, Calendar, User, DollarSign } from "lucide-react";
 
@@ -241,37 +242,35 @@ export default function StudentInstitutionForm() {
               <div className="space-y-2">
                 <Label htmlFor="board">Select Board / Class / Stream</Label>
                 <div className="relative">
-                  <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <select
-                    id="board"
-                    value={formData.board}
-                    onChange={(e) => handleInputChange("board", e.target.value)}
-                    className="w-full h-12 pl-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  >
-                    <option value="">Select Board</option>
-                    <option value="CBSE">CBSE</option>
-                    <option value="ICSE">ICSE</option>
-                    <option value="State Board">State Board</option>
-                    <option value="IB">IB</option>
-                    <option value="University">University</option>
-                  </select>
+                  <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+                  <Select value={formData.board} onValueChange={(value) => handleInputChange("board", value)}>
+                    <SelectTrigger className="h-12 pl-10">
+                      <SelectValue placeholder="Select Board" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CBSE">CBSE</SelectItem>
+                      <SelectItem value="ICSE">ICSE</SelectItem>
+                      <SelectItem value="State Board">State Board</SelectItem>
+                      <SelectItem value="IB">IB</SelectItem>
+                      <SelectItem value="University">University</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="academicYear">Academic Year</Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <select
-                    id="academicYear"
-                    value={formData.academicYear}
-                    onChange={(e) => handleInputChange("academicYear", e.target.value)}
-                    className="w-full h-12 pl-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  >
-                    <option value="">Select Academic Year</option>
-                    <option value="2024-25">2024-25</option>
-                    <option value="2025-26">2025-26</option>
-                  </select>
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+                  <Select value={formData.academicYear} onValueChange={(value) => handleInputChange("academicYear", value)}>
+                    <SelectTrigger className="h-12 pl-10">
+                      <SelectValue placeholder="Select Academic Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2024-25">2024-25</SelectItem>
+                      <SelectItem value="2025-26">2025-26</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

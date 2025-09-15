@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
 import EmiPlanSelectionForm from "~/components/onboarding/emi-plan-selection-form";
 import OnboardingProgress from "~/components/onboarding-progress";
+import OnboardingHeader from "~/components/onboarding/onboarding-header";
 
 export default async function EmiPlanSelectionStep() {
   const session = await getServerSession();
@@ -15,12 +16,10 @@ export default async function EmiPlanSelectionStep() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-1">EMI Plan Selection</h1>
-          <p className="text-blue-100">Choose the best payment plan for you</p>
-        </div>
-      </div>
+      <OnboardingHeader
+        title="EMI Plan Selection"
+        subtitle="Choose the best payment plan for you"
+      />
 
       {/* Progress Indicator */}
       <OnboardingProgress currentStep={2} totalSteps={5} stepTitles={stepTitles} />

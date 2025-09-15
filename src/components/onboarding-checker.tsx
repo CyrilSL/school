@@ -13,13 +13,13 @@ export default function OnboardingChecker() {
         if (response.ok) {
           const data = await response.json();
           if (!data.isOnboardingCompleted) {
-            router.push("/onboarding/parent");
+            router.push("/parent/onboarding");
           }
         }
       } catch (error) {
         console.error("Error checking onboarding:", error);
         // On error, redirect to onboarding to be safe
-        router.push("/onboarding/parent");
+        router.push("/parent/onboarding");
       }
     };
 

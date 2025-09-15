@@ -19,7 +19,7 @@ export default function ParentOnboarding() {
         if (!response.ok) {
           console.log("ParentOnboarding: API failed, defaulting to step 1");
           // If API fails, default to step 1
-          router.push("/onboarding/parent/steps/1");
+          router.push("/parent/onboarding/steps/1");
           return;
         }
 
@@ -29,16 +29,16 @@ export default function ParentOnboarding() {
         if (data.isCompleted) {
           console.log("ParentOnboarding: Onboarding complete, going to dashboard");
           // If onboarding is complete, go to dashboard
-          router.push("/dashboard/parent");
+          router.push("/parent/dashboard");
         } else {
           console.log(`ParentOnboarding: Redirecting to step ${data.nextStep}`);
           // Redirect to the next incomplete step
-          router.push(`/onboarding/parent/steps/${data.nextStep}`);
+          router.push(`/parent/onboarding/steps/${data.nextStep}`);
         }
       } catch (error) {
         console.error("ParentOnboarding: Error determining next step:", error);
         // Default to step 1 on error
-        router.push("/onboarding/parent/steps/1");
+        router.push("/parent/onboarding/steps/1");
       } finally {
         setLoading(false);
       }

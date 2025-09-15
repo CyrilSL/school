@@ -105,13 +105,13 @@ export default function PrimaryEarnerForm() {
 
     if (saved) {
       // Navigate to next step
-      router.push("/onboarding/parent/steps/4");
+      router.push("/parent/onboarding/steps/4");
     }
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/onboarding/parent/steps/2");
+    router.push("/parent/onboarding/steps/2");
   };
 
   if (loading) {
@@ -199,7 +199,7 @@ export default function PrimaryEarnerForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/dashboard/parent")}
+            onClick={() => router.push("/parent/dashboard")}
             className="px-6"
           >
             Save & Continue Later

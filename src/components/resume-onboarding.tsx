@@ -62,7 +62,7 @@ export default function ResumeOnboarding() {
   if (!progressData) return null;
 
   const getResumeLink = () => {
-    return `/onboarding/parent/steps/${progressData.nextStep}`;
+    return `/parent/onboarding/steps/${progressData.nextStep}`;
   };
 
   const getProgressPercentage = () => {

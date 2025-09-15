@@ -29,7 +29,7 @@ export default function InstitutionLogin() {
       if (result.error) {
         setError(result.error.message || "Login failed");
       } else {
-        router.push("/dashboard/institution");
+        router.push("/institution/dashboard");
       }
     } catch (err) {
       setError("An unexpected error occurred");

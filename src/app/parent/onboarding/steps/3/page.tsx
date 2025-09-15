@@ -1,32 +1,34 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
-import TermsConfirmationForm from "~/components/onboarding/terms-confirmation-form";
+import PrimaryEarnerForm from "~/components/onboarding/primary-earner-form";
 import OnboardingProgress from "~/components/onboarding-progress";
+import OnboardingHeader from "~/components/onboarding/onboarding-header";
 
-export default async function TermsConfirmationStep() {
+export default async function PrimaryEarnerStep() {
   const session = await getServerSession();
   
   if (!session?.user) {
     redirect("/login/parent");
   }
 
-  const stepTitles = ["Student Details", "EMI Plan", "Parent PAN", "Intro", "Personal Details", "Confirmation"];
+  const stepTitles = ["Student & Fee Details", "EMI Plan Selection", "Primary Earner", "Welcome", "Personal Details"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-teal-700 text-white p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-1">Review and confirm your EMI plan</h1>
-        </div>
-      </div>
+      <OnboardingHeader
+        title="Primary Earner Details"
+        subtitle="We need details of the primary earning member"
+      />
 
       {/* Progress Indicator */}
-      <OnboardingProgress currentStep={6} totalSteps={6} stepTitles={stepTitles} />
+      <OnboardingProgress currentStep={3} totalSteps={5} stepTitles={stepTitles} />
 
       {/* Form */}
       <div className="p-8">
-        <TermsConfirmationForm />
+        <div className="max-w-2xl mx-auto">
+          <PrimaryEarnerForm />
+        </div>
       </div>
 
       {/* Footer */}

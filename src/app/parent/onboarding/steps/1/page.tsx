@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
-import PrimaryEarnerForm from "~/components/onboarding/primary-earner-form";
+import StudentInstitutionForm from "~/components/onboarding/student-institution-form";
 import OnboardingProgress from "~/components/onboarding-progress";
+import OnboardingHeader from "~/components/onboarding/onboarding-header";
 
-export default async function PrimaryEarnerStep() {
+export default async function StudentInstitutionStep() {
   const session = await getServerSession();
   
   if (!session?.user) {
@@ -15,20 +16,18 @@ export default async function PrimaryEarnerStep() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-1">Primary Earner Details</h1>
-          <p className="text-blue-100">We need details of the primary earning member</p>
-        </div>
-      </div>
+      <OnboardingHeader
+        title="Student & Fee Details"
+        subtitle="Let's start with your child's information"
+      />
 
       {/* Progress Indicator */}
-      <OnboardingProgress currentStep={3} totalSteps={5} stepTitles={stepTitles} />
+      <OnboardingProgress currentStep={1} totalSteps={5} stepTitles={stepTitles} />
 
       {/* Form */}
       <div className="p-8">
-        <div className="max-w-2xl mx-auto">
-          <PrimaryEarnerForm />
+        <div className="max-w-4xl mx-auto">
+          <StudentInstitutionForm />
         </div>
       </div>
 

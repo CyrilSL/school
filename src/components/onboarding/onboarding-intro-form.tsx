@@ -47,11 +47,11 @@ export default function OnboardingIntroForm() {
   }, []);
 
   const handleNext = () => {
-    router.push("/onboarding/parent/steps/5");
+    router.push("/parent/onboarding/steps/5");
   };
 
   const handleBack = () => {
-    router.push("/onboarding/parent/steps/3");
+    router.push("/parent/onboarding/steps/3");
   };
 
   const handleSaveAndExit = () => {
@@ -59,7 +59,7 @@ export default function OnboardingIntroForm() {
       title: "Progress saved",
       description: "Your progress has been saved. You can continue later from your dashboard."
     });
-    router.push("/dashboard/parent");
+    router.push("/parent/dashboard");
   };
 
   if (loading) {

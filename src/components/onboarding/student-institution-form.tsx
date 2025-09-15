@@ -175,7 +175,7 @@ export default function StudentInstitutionForm() {
     setIsSaving(false);
 
     if (saved) {
-      router.push("/onboarding/parent/steps/2");
+      router.push("/parent/onboarding/steps/2");
     }
   };
 
@@ -419,7 +419,7 @@ export default function StudentInstitutionForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/dashboard/parent")}
+            onClick={() => router.push("/parent/dashboard")}
             className="px-6"
           >
             Save & Continue Later

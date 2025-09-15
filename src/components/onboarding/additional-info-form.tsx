@@ -37,7 +37,7 @@ export default function AdditionalInfoForm() {
         description: "You need to complete the parent information step before proceeding.",
         variant: "destructive"
       });
-      router.push("/onboarding/parent/steps/1");
+      router.push("/parent/onboarding/steps/1");
       return;
     }
 
@@ -86,12 +86,12 @@ export default function AdditionalInfoForm() {
     if (!validateForm()) return;
     
     saveProgress();
-    router.push("/onboarding/parent/steps/3");
+    router.push("/parent/onboarding/steps/3");
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/onboarding/parent/steps/1");
+    router.push("/parent/onboarding/steps/1");
   };
 
   const handleSaveAndExit = () => {
@@ -100,12 +100,12 @@ export default function AdditionalInfoForm() {
       title: "Progress saved",
       description: "Your progress has been saved. You can continue later from your dashboard."
     });
-    router.push("/dashboard/parent");
+    router.push("/parent/dashboard");
   };
 
   const handleSkip = () => {
     saveProgress();
-    router.push("/onboarding/parent/steps/3");
+    router.push("/parent/onboarding/steps/3");
   };
 
   if (loading) {

@@ -109,7 +109,7 @@ export default function InstitutionDashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <Button 
             className="w-full h-full flex flex-col items-center justify-center"
-            onClick={() => window.location.href = "/dashboard/institution/payments"}
+            onClick={() => window.location.href = "/institution/dashboard/payments"}
           >
             <div className="text-sm font-medium mb-1">Platform</div>
             <div className="text-lg font-bold">Payments</div>

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
-import OnboardingIntroForm from "~/components/onboarding/onboarding-intro-form";
+import TermsConfirmationForm from "~/components/onboarding/terms-confirmation-form";
 import OnboardingProgress from "~/components/onboarding-progress";
 
-export default async function OnboardingIntroStep() {
+export default async function TermsConfirmationStep() {
   const session = await getServerSession();
   
   if (!session?.user) {
@@ -15,18 +15,30 @@ export default async function OnboardingIntroStep() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-1">Welcome to MyFee</h1>
+      <div className="bg-gradient-to-r from-green-600 to-teal-700 text-white p-4">
+        <div className="flex justify-between items-center">
+          <div className="flex-1">
+            <div className="text-center">
+              <h1 className="text-2xl font-semibold mb-1">Review and confirm your EMI plan</h1>
+            </div>
+          </div>
+          <div>
+            <a
+              href="/parent/dashboard"
+              className="inline-flex items-center px-4 py-2 border border-green-400 rounded-md text-sm font-medium text-white hover:bg-green-500 transition-colors"
+            >
+              Dashboard
+            </a>
+          </div>
         </div>
       </div>
 
       {/* Progress Indicator */}
-      <OnboardingProgress currentStep={4} totalSteps={6} stepTitles={stepTitles} />
+      <OnboardingProgress currentStep={6} totalSteps={6} stepTitles={stepTitles} />
 
       {/* Form */}
       <div className="p-8">
-        <OnboardingIntroForm />
+        <TermsConfirmationForm />
       </div>
 
       {/* Footer */}

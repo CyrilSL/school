@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
+import { headers } from "next/headers";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import OnboardingChecker from "~/components/onboarding-checker";
@@ -50,11 +51,32 @@ export default async function ParentDashboard() {
   // The server-side check was causing 401 errors
   // TODO: Implement proper server-side onboarding check later
 
-  // If we reach here, user is authenticated and onboarding is complete
-  const students: Student[] = [];
-  const availableFees: FeeStructure[] = [];
-  const emiPlans: EmiPlan[] = [];
-  const applications: FeeApplication[] = [];
+  // Fetch real data from API
+  let students: Student[] = [];
+  let availableFees: FeeStructure[] = [];
+  let emiPlans: EmiPlan[] = [];
+  let applications: FeeApplication[] = [];
+  let onboardingProgress = null;
+
+  try {
+    // Get onboarding progress to show submitted forms
+    const headersList = headers();
+    const host = headersList.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const cookie = headersList.get('cookie') || '';
+
+    const progressResponse = await fetch(`${protocol}://${host}/api/parent/onboarding/partial`, {
+      headers: {
+        'Cookie': cookie,
+      },
+    });
+
+    if (progressResponse.ok) {
+      onboardingProgress = await progressResponse.json();
+    }
+  } catch (error) {
+    console.error('Error fetching onboarding progress:', error);
+  }
 
 
   return (
@@ -71,10 +93,92 @@ export default async function ParentDashboard() {
         </div>
       </div>
 
+      {/* Onboarding Forms Status Section */}
+      {onboardingProgress && !onboardingProgress.isCompleted && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Your Application Status</h2>
+          <div className="bg-white rounded-lg shadow border">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Onboarding Progress</h3>
+                <Badge variant="secondary">In Progress</Badge>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-sm font-medium">Student & Fee Details</span>
+                  <Badge variant={onboardingProgress.completedSteps?.step1 ? "default" : "outline"}>
+                    {onboardingProgress.completedSteps?.step1 ? "Completed" : "Pending"}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-sm font-medium">EMI Plan Selection</span>
+                  <Badge variant={onboardingProgress.completedSteps?.step2 ? "default" : "outline"}>
+                    {onboardingProgress.completedSteps?.step2 ? "Completed" : "Pending"}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-sm font-medium">Primary Earner Details</span>
+                  <Badge variant={onboardingProgress.completedSteps?.step3 ? "default" : "outline"}>
+                    {onboardingProgress.completedSteps?.step3 ? "Completed" : "Pending"}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-sm font-medium">Welcome Information</span>
+                  <Badge variant={onboardingProgress.completedSteps?.step4 ? "default" : "outline"}>
+                    {onboardingProgress.completedSteps?.step4 ? "Completed" : "Pending"}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm font-medium">Personal Details</span>
+                  <Badge variant={onboardingProgress.completedSteps?.step5 ? "default" : "outline"}>
+                    {onboardingProgress.completedSteps?.step5 ? "Completed" : "Pending"}
+                  </Badge>
+                </div>
+              </div>
+
+              {onboardingProgress.nextStep && onboardingProgress.nextStep <= 5 && (
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-sm text-gray-600 mb-3">
+                    Next step: Continue with step {onboardingProgress.nextStep}
+                  </p>
+                  <a
+                    href={`/parent/onboarding/steps/${onboardingProgress.nextStep}`}
+                    className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium transition-colors"
+                  >
+                    Continue Application
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Students Section */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Your Students</h2>
-        {students.length === 0 ? (
+        {students.length === 0 && onboardingProgress?.student ? (
+          <div className="bg-white rounded-lg shadow border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium">Student Information</h3>
+              <Badge variant="secondary">From Application</Badge>
+            </div>
+            <div className="space-y-2">
+              <p><span className="font-medium">Name:</span> {onboardingProgress.student.name}</p>
+              <p><span className="font-medium">Class:</span> {onboardingProgress.student.class || "Not specified"}</p>
+              {onboardingProgress.student.rollNumber && (
+                <p><span className="font-medium">Roll Number:</span> {onboardingProgress.student.rollNumber}</p>
+              )}
+              <p><span className="font-medium">Fee Amount:</span> ₹{parseFloat(onboardingProgress.student.feeAmount).toLocaleString()}</p>
+              <p><span className="font-medium">Fee Type:</span> {onboardingProgress.student.feeType}</p>
+            </div>
+          </div>
+        ) : students.length === 0 ? (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <div className="text-center">
               <div className="text-blue-600 mb-4">
@@ -84,8 +188,8 @@ export default async function ParentDashboard() {
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Added Yet</h3>
               <p className="text-blue-700 mb-4">It looks like you haven't added any student information yet.</p>
-              <a 
-                href="/onboarding/parent"
+              <a
+                href="/parent/onboarding"
                 className="inline-flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium transition-colors"
               >
                 Add Student Information
@@ -252,7 +356,7 @@ export default async function ParentDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {application.status === "approved" && (
                           <a
-                            href={`/dashboard/parent/installments?applicationId=${application.id}`}
+                            href={`/parent/dashboard/installments?applicationId=${application.id}`}
                             className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
                           >
                             View Installments

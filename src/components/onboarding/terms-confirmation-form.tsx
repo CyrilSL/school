@@ -167,7 +167,7 @@ export default function TermsConfirmationForm() {
       });
       
       // Redirect to success/dashboard page
-      router.push("/dashboard/parent?onboarding=completed");
+      router.push("/parent/dashboard?onboarding=completed");
     } catch (error) {
       console.error("Error submitting application:", error);
       toast({
@@ -182,7 +182,7 @@ export default function TermsConfirmationForm() {
 
   const handleBack = () => {
     saveProgress();
-    router.push("/onboarding/parent/steps/5");
+    router.push("/parent/onboarding/steps/5");
   };
 
   const handleSaveAndExit = () => {
@@ -191,7 +191,7 @@ export default function TermsConfirmationForm() {
       title: "Progress saved",
       description: "Your progress has been saved. You can continue later from your dashboard."
     });
-    router.push("/dashboard/parent");
+    router.push("/parent/dashboard");
   };
 
   if (loading) {

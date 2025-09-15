@@ -192,13 +192,13 @@ export default function EmiPlanSelectionForm() {
     setIsSaving(false);
 
     if (saved) {
-      router.push("/onboarding/parent/steps/3");
+      router.push("/parent/onboarding/steps/3");
     }
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/onboarding/parent/steps/1");
+    router.push("/parent/onboarding/steps/1");
   };
 
   if (loading) {
@@ -299,7 +299,7 @@ export default function EmiPlanSelectionForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/dashboard/parent")}
+            onClick={() => router.push("/parent/dashboard")}
             className="px-6"
           >
             Save & Continue Later

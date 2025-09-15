@@ -66,9 +66,9 @@ export default async function Navbar() {
                   Welcome, {session.user?.name}!
                 </div>
                 <Link href={
-                  session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin") 
-                    ? "/dashboard/institution" 
-                    : "/dashboard/parent"
+                  session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin")
+                    ? "/institution/dashboard"
+                    : "/parent/dashboard"
                 }>
                   <Button 
                     size="sm"
@@ -87,9 +87,9 @@ export default async function Navbar() {
             {/* Show Dashboard button for mobile too if authenticated */}
             {session && (
               <Link href={
-                session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin") 
-                  ? "/dashboard/institution" 
-                  : "/dashboard/parent"
+                session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin")
+                  ? "/institution/dashboard"
+                  : "/parent/dashboard"
               }>
                 <Button 
                   size="sm"

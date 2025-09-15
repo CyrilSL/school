@@ -123,12 +123,12 @@ export default function ParentPanForm() {
     if (!validateForm()) return;
     
     saveProgress();
-    router.push("/onboarding/parent/steps/4");
+    router.push("/parent/onboarding/steps/4");
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/onboarding/parent/steps/2");
+    router.push("/parent/onboarding/steps/2");
   };
 
   const handleSaveAndExit = () => {
@@ -137,7 +137,7 @@ export default function ParentPanForm() {
       title: "Progress saved",
       description: "Your progress has been saved. You can continue later from your dashboard."
     });
-    router.push("/dashboard/parent");
+    router.push("/parent/dashboard");
   };
 
   if (loading) {

@@ -46,7 +46,7 @@ export default function StudentInfoForm() {
         description: "You need to complete the parent information step before proceeding.",
         variant: "destructive"
       });
-      router.push("/onboarding/parent/steps/1");
+      router.push("/parent/onboarding/steps/1");
       return;
     }
 
@@ -126,7 +126,7 @@ export default function StudentInfoForm() {
         title: "Onboarding completed successfully!",
         description: "Welcome to MyFee. You can now access your dashboard.",
       });
-      router.push("/dashboard/parent");
+      router.push("/parent/dashboard");
     } catch (error) {
       console.error("Error completing onboarding:", error);
       toast({
@@ -141,7 +141,7 @@ export default function StudentInfoForm() {
 
   const handleBack = () => {
     saveProgress();
-    router.push("/onboarding/parent/steps/2");
+    router.push("/parent/onboarding/steps/2");
   };
 
   const handleSaveAndExit = () => {
@@ -150,7 +150,7 @@ export default function StudentInfoForm() {
       title: "Progress saved",
       description: "Your progress has been saved. You can continue later from your dashboard.",
     });
-    router.push("/dashboard/parent");
+    router.push("/parent/dashboard");
   };
 
   if (loading) {

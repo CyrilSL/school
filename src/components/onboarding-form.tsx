@@ -122,7 +122,7 @@ export default function OnboardingForm() {
 
       const result = await response.json();
       
-      router.push("/dashboard/parent");
+      router.push("/parent/dashboard");
     } catch (error) {
       console.error("Error submitting onboarding data:", error);
       alert(error instanceof Error ? error.message : "Failed to save information. Please try again.");

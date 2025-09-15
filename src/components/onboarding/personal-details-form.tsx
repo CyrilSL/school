@@ -183,13 +183,13 @@ export default function PersonalDetailsForm() {
     setIsSaving(false);
 
     if (saved) {
-      router.push("/onboarding/parent/steps/6");
+      router.push("/parent/onboarding/steps/6");
     }
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/onboarding/parent/steps/4");
+    router.push("/parent/onboarding/steps/4");
   };
 
   const handleSaveAndExit = () => {
@@ -198,7 +198,7 @@ export default function PersonalDetailsForm() {
       title: "Progress saved",
       description: "Your progress has been saved. You can continue later from your dashboard."
     });
-    router.push("/dashboard/parent");
+    router.push("/parent/dashboard");
   };
 
   if (loading) {

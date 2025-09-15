@@ -29,7 +29,7 @@ export default function ParentLogin() {
       if (result.error) {
         setError(result.error.message || "Login failed");
       } else {
-        router.push("/dashboard/parent");
+        router.push("/parent/dashboard");
       }
     } catch (err) {
       setError("An unexpected error occurred");

@@ -86,7 +86,7 @@ export const HeroClient = () => {
           className="flex flex-col sm:flex-row gap-6 justify-center items-center"
         >
           <Link
-            href="/onboarding/parent"
+            href="/parent/onboarding"
             className="group bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-gray-900 font-bold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-105 hover:shadow-2xl flex items-center gap-3 text-lg"
           >
             <Icon icon="material-symbols:family-restroom" className="text-2xl" />

@@ -1,3 +1,4 @@
+import { SidebarProvider } from "~/components/ui/sidebar";
 import DashboardNavbar from "~/components/dashboard/navbar";
 import DashboardSidebar from "~/components/dashboard/sidebar";
 
@@ -7,16 +8,16 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-screen flex flex-col">
-      <DashboardNavbar />
-      <div className="flex flex-1 overflow-hidden">
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
         <DashboardSidebar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6">
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <DashboardNavbar />
+          <main className="flex-1 overflow-y-auto p-6">
             {children}
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

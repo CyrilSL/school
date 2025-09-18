@@ -79,83 +79,108 @@ export default async function ParentDashboard() {
   }
 
 
+  // Mock application data - replace with real data from API
+  const mockApplications = [
+    {
+      id: "1496252",
+      institution: "IISC Bangalore(J)",
+      academicYear: "2024-2025",
+      studentName: "Cyril Samuel",
+      totalFees: 123000,
+      status: "emi_pending",
+      statusText: onboardingProgress?.isCompleted
+        ? "Please complete your EMI form"
+        : "Please complete your EMI form",
+      actionText: "Complete now",
+      actionUrl: onboardingProgress?.isCompleted
+        ? "/parent/dashboard/applications/1496252"
+        : `/parent/onboarding/steps/${onboardingProgress?.nextStep || 1}`
+    },
+    {
+      id: "1474706",
+      institution: "Chinmaya Vishwavidyapeeth",
+      academicYear: "2025-2026",
+      studentName: "Cyril Samuel",
+      totalFees: 100000,
+      status: "emi_progress",
+      statusText: "Your EMI registration is in progress",
+      actionText: "View Details",
+      actionUrl: onboardingProgress?.isCompleted
+        ? "/parent/dashboard/applications/1474706"
+        : `/parent/onboarding/steps/${onboardingProgress?.nextStep || 1}`
+    }
+  ];
+
   return (
-    <div className="max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Dashboard</h1>
-        <p className="text-gray-600">Welcome back, {session.user?.name}</p>
+    <div className="max-w-6xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Applications</h1>
+        <p className="text-gray-600">Manage your fee applications and EMI plans</p>
       </div>
 
-      {/* Application Progress */}
-      {onboardingProgress && !onboardingProgress.isCompleted && (
-        <div className="mb-6">
-          <Card className="max-w-md">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Application Progress</CardTitle>
-                <Badge variant="secondary">Pending</Badge>
+      {/* Application Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {mockApplications.map((application) => (
+          <Card key={application.id} className="hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">Application ID: {application.id}</div>
+                  <CardTitle className="text-lg leading-tight">{application.institution}</CardTitle>
+                </div>
+                <Badge
+                  variant={application.status === "emi_pending" ? "destructive" : "secondary"}
+                  className="ml-2"
+                >
+                  {application.status === "emi_pending" ? "Action Required" : "In Progress"}
+                </Badge>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {(() => {
-                  const completedSteps = Object.values(onboardingProgress.completedSteps || {}).filter(Boolean).length;
-                  const totalSteps = 5;
-                  const progressPercentage = (completedSteps / totalSteps) * 100;
 
-                  return (
-                    <>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm text-gray-600">
-                          <span>{completedSteps} of {totalSteps} steps completed</span>
-                          <span>{Math.round(progressPercentage)}%</span>
-                        </div>
-                        <Progress value={progressPercentage} className="h-2" />
-                      </div>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-gray-600">Academic Year</div>
+                  <div className="font-medium">{application.academicYear}</div>
+                </div>
+                <div>
+                  <div className="text-gray-600">Student Name</div>
+                  <div className="font-medium">{application.studentName}</div>
+                </div>
+              </div>
 
-                      {onboardingProgress.nextStep && onboardingProgress.nextStep <= 5 && (
-                        <Button asChild className="w-full">
-                          <a href={`/parent/onboarding/steps/${onboardingProgress.nextStep}`}>
-                            Continue Application
-                          </a>
-                        </Button>
-                      )}
-                    </>
-                  );
-                })()}
+              <div className="text-sm">
+                <div className="text-gray-600">Total Fees</div>
+                <div className="text-xl font-bold text-green-600">
+                  ₹{application.totalFees.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <div className="text-sm text-gray-700 mb-3">{application.statusText}</div>
+                <Button
+                  asChild
+                  className={`w-full ${
+                    application.status === "emi_pending"
+                      ? "bg-orange-600 hover:bg-orange-700"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
+                >
+                  <a href={application.actionUrl}>{application.actionText}</a>
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {/* Student Information */}
-      {students.length === 0 && onboardingProgress?.student && (
-        <div className="mb-6">
-          <Card className="max-w-md">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Student</CardTitle>
-                <Badge variant="outline">Active</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Name</span>
-                  <span className="font-medium">{onboardingProgress.student.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Class</span>
-                  <span className="font-medium">{onboardingProgress.student.class || "Not specified"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Fee Amount</span>
-                  <span className="font-medium">₹{parseFloat(onboardingProgress.student.feeAmount).toLocaleString()}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* If no applications */}
+      {mockApplications.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-gray-500 mb-4">No applications found</div>
+          <Button asChild>
+            <a href="/parent/apply">Create New Application</a>
+          </Button>
         </div>
       )}
 

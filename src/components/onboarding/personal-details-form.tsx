@@ -251,7 +251,7 @@ export default function PersonalDetailsForm() {
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
                   <SelectItem value="Male">Male</SelectItem>
                   <SelectItem value="Female">Female</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
@@ -277,7 +277,7 @@ export default function PersonalDetailsForm() {
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select marital status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
                   <SelectItem value="Single">Single</SelectItem>
                   <SelectItem value="Married">Married</SelectItem>
                   <SelectItem value="Divorced">Divorced</SelectItem>
@@ -361,7 +361,7 @@ export default function PersonalDetailsForm() {
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select education level" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
                   <SelectItem value="High School">High School</SelectItem>
                   <SelectItem value="Diploma">Diploma</SelectItem>
                   <SelectItem value="Bachelor's Degree">Bachelor's Degree</SelectItem>
@@ -378,7 +378,7 @@ export default function PersonalDetailsForm() {
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select work experience" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
                   <SelectItem value="0-2 years">0-2 years</SelectItem>
                   <SelectItem value="2-5 years">2-5 years</SelectItem>
                   <SelectItem value="5-10 years">5-10 years</SelectItem>
@@ -394,7 +394,7 @@ export default function PersonalDetailsForm() {
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select company type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
                   <SelectItem value="Government">Government</SelectItem>
                   <SelectItem value="Public Sector">Public Sector</SelectItem>
                   <SelectItem value="Private Limited">Private Limited</SelectItem>

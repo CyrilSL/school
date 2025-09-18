@@ -6,79 +6,73 @@ import SignoutButton from "~/components/auth/signout-button";
 export default async function Navbar() {
   const session = await getServerSession();
   return (
-    <nav className="bg-gray-900/95 backdrop-blur-md border-b border-gray-700/50 shadow-lg">
+    <nav className="bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+            <div className="text-2xl font-bold text-blue-600">
               MyFee
             </div>
           </Link>
 
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link 
-              href="/" 
-              className="text-gray-300 hover:text-yellow-400 transition-colors font-medium"
+          {/* Navigation Links - Centered */}
+          <div className="hidden md:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2">
+            <Link
+              href="/"
+              className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
             >
               Home
             </Link>
-            <Link 
-              href="#features" 
-              className="text-gray-300 hover:text-yellow-400 transition-colors font-medium"
+            <Link
+              href="#features"
+              className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
             >
               Features
             </Link>
-            <Link 
-              href="#about" 
-              className="text-gray-300 hover:text-yellow-400 transition-colors font-medium"
+            <Link
+              href="#about"
+              className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
             >
               About
             </Link>
           </div>
 
           {/* Auth Buttons */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             {!session ? (
               <>
                 <Link href="/login/parent">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
-                    className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900 font-medium"
+                    className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-medium"
                   >
                     Parent Login
                   </Button>
                 </Link>
                 <Link href="/login/institution">
-                  <Button 
+                  <Button
                     size="sm"
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
                   >
                     Institution Login
                   </Button>
                 </Link>
               </>
             ) : (
-              <>
-                <div className="text-sm text-gray-300 mr-2">
-                  Welcome, {session.user?.name}!
-                </div>
-                <Link href={
-                  session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin")
-                    ? "/institution/dashboard"
-                    : "/parent/dashboard"
-                }>
-                  <Button 
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    Dashboard
-                  </Button>
-                </Link>
-                <SignoutButton />
-              </>
+              <Link href={
+                session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin")
+                  ? "/institution/dashboard"
+                  : "/parent/dashboard"
+              }>
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Dashboard
+                </Button>
+              </Link>
             )}
           </div>
 
@@ -91,9 +85,9 @@ export default async function Navbar() {
                   ? "/institution/dashboard"
                   : "/parent/dashboard"
               }>
-                <Button 
+                <Button
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Dashboard
                 </Button>

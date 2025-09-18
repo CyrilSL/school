@@ -14,7 +14,7 @@ export default async function Home() {
       <FeaturesClient />
       
       {session && (
-        <section className="py-16 bg-gradient-to-r from-blue-50 to-purple-50">
+        <section className="py-16 bg-gray-50">
           <div className="container mx-auto text-center px-4">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Welcome back, {session.user?.name}!

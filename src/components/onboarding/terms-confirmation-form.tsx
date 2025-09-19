@@ -29,56 +29,71 @@ export default function TermsConfirmationForm() {
   const [applicationSummary, setApplicationSummary] = useState<any>(null);
 
   useEffect(() => {
-    // Check if all previous steps are completed
+    // Collect data from both legacy and new flows
     const studentDetailsData = localStorage.getItem('onboarding-student-details');
+    const studentInstitutionData = localStorage.getItem('onboarding-student-institution');
     const emiPlanData = localStorage.getItem('onboarding-emi-plan');
     const parentPanData = localStorage.getItem('onboarding-parent-pan');
+    const primaryEarnerData = localStorage.getItem('onboarding-primary-earner');
     const personalDetailsData = localStorage.getItem('onboarding-personal-details');
-    
-    if (!studentDetailsData || !emiPlanData || !parentPanData || !personalDetailsData) {
-      // Validation removed - allow direct access to all steps
-      setLoading(false);
-      return;
+
+    // Build application summary (best-effort)
+    try {
+      const studentDetails = studentDetailsData ? JSON.parse(studentDetailsData) : {};
+      const studentInstitution = studentInstitutionData ? JSON.parse(studentInstitutionData) : {};
+      const emiData = emiPlanData ? JSON.parse(emiPlanData) : {};
+      const parentData = parentPanData ? JSON.parse(parentPanData) : {};
+      const primaryEarner = primaryEarnerData ? JSON.parse(primaryEarnerData) : {};
+      const personalData = personalDetailsData ? JSON.parse(personalDetailsData) : {};
+
+      const name = studentDetails.studentName || [studentInstitution.studentFirstName, studentInstitution.studentLastName].filter(Boolean).join(' ');
+      const institution = studentDetails.institutionName || studentInstitution.institutionName;
+      const studentClass = studentDetails.studentClass || studentInstitution.classStream;
+      const feeAmountRaw = studentDetails.feeAmount || studentInstitution.annualFeeAmount || '0';
+      const feeAmount = parseFloat(feeAmountRaw || '0');
+
+      const normalizePlan = (id: string) => {
+        switch (id) {
+          case 'plan-a': return { duration: 9 };
+          case 'plan-b': return { duration: 6 };
+          case 'plan-c': return { duration: 12 };
+          case 'plan-d': return { duration: 18 };
+          case 'plan-e': return { duration: 24 };
+          case '3-months': return { duration: 3 };
+          case '6-months': return { duration: 6 };
+          case '9-months': return { duration: 9 };
+          case '12-months': return { duration: 12 };
+          default: return { duration: 6 };
+        }
+      };
+      const sel = normalizePlan(emiData?.selectedPlanId);
+      const processingFee = feeAmount * 0.02 * (sel.duration / 3);
+
+      setApplicationSummary({
+        student: {
+          name,
+          institution,
+          class: studentClass,
+          feeAmount: feeAmount,
+          feeType: studentDetails.feeType || 'Annual Fee',
+        },
+        emi: {
+          duration: sel.duration,
+          monthlyAmount: Math.ceil(feeAmount / sel.duration || 1),
+          processingFee: processingFee,
+          totalAmount: feeAmount + processingFee,
+        },
+        parent: {
+          name: parentData.parentName || [primaryEarner.firstName, primaryEarner.lastName].filter(Boolean).join(' '),
+          pan: parentData.parentPan || personalData.applicantPan,
+          phone: parentData.parentPhone || personalData.alternatePhone,
+          email: parentData.parentEmail || personalData.email,
+          monthlyIncome: parentData.monthlyIncome,
+        },
+      });
+    } catch (e) {
+      console.warn('Failed building application summary:', e);
     }
-
-    // Build application summary
-    const studentData = JSON.parse(studentDetailsData);
-    const emiData = JSON.parse(emiPlanData);
-    const parentData = JSON.parse(parentPanData);
-    const personalData = JSON.parse(personalDetailsData);
-
-    const feeAmount = parseFloat(studentData.feeAmount || "0");
-    const planMap: any = {
-      "3-months": { duration: 3, emi: Math.ceil(feeAmount / 3), processingFee: feeAmount * 0.02 },
-      "6-months": { duration: 6, emi: Math.ceil(feeAmount / 6), processingFee: feeAmount * 0.024 },
-      "9-months": { duration: 9, emi: Math.ceil(feeAmount / 9), processingFee: feeAmount * 0.03 },
-      "12-months": { duration: 12, emi: Math.ceil(feeAmount / 12), processingFee: feeAmount * 0.04 },
-    };
-    
-    const selectedPlan = planMap[emiData.selectedPlanId];
-    
-    setApplicationSummary({
-      student: {
-        name: studentData.studentName,
-        institution: studentData.institutionName,
-        class: studentData.studentClass,
-        feeAmount: feeAmount,
-        feeType: studentData.feeType,
-      },
-      emi: {
-        duration: selectedPlan.duration,
-        monthlyAmount: selectedPlan.emi,
-        processingFee: selectedPlan.processingFee,
-        totalAmount: feeAmount + selectedPlan.processingFee,
-      },
-      parent: {
-        name: parentData.parentName,
-        pan: parentData.parentPan,
-        phone: parentData.parentPhone,
-        email: parentData.parentEmail,
-        monthlyIncome: parentData.monthlyIncome,
-      },
-    });
 
     // Load saved consent data
     const savedData = localStorage.getItem('onboarding-terms-confirmation');
@@ -126,32 +141,102 @@ export default function TermsConfirmationForm() {
     setSubmitting(true);
 
     try {
-      // Combine all form data
+      // Collect all local sources
       const studentDetails = JSON.parse(localStorage.getItem('onboarding-student-details') || '{}');
+      const studentInstitution = JSON.parse(localStorage.getItem('onboarding-student-institution') || '{}');
       const emiPlan = JSON.parse(localStorage.getItem('onboarding-emi-plan') || '{}');
       const parentPan = JSON.parse(localStorage.getItem('onboarding-parent-pan') || '{}');
+      const primaryEarner = JSON.parse(localStorage.getItem('onboarding-primary-earner') || '{}');
       const personalDetails = JSON.parse(localStorage.getItem('onboarding-personal-details') || '{}');
       
-      const completeData = {
-        ...studentDetails,
-        ...emiPlan,
-        ...parentPan,
-        ...personalDetails,
+      // Build API payload to satisfy server required fields
+      const studentName = studentDetails.studentName || [studentInstitution.studentFirstName, studentInstitution.studentLastName].filter(Boolean).join(' ');
+      const feeAmount = studentDetails.feeAmount || studentInstitution.annualFeeAmount;
+      const payload = {
+        // Step 1
+        studentName,
+        studentRollNumber: studentDetails.studentRollNumber || studentInstitution.studentId,
+        studentDateOfBirth: studentDetails.studentDateOfBirth,
+        studentClass: studentDetails.studentClass || studentInstitution.classStream,
+        studentSection: studentDetails.studentSection,
+        institutionName: studentDetails.institutionName || studentInstitution.institutionName,
+        institutionAddress: studentDetails.institutionAddress || studentInstitution.location,
+        previousSchool: studentDetails.previousSchool,
+        feeAmount,
+        feeType: studentDetails.feeType || 'Annual Fee',
+
+        // Step 2
+        selectedPlanId: emiPlan.selectedPlanId,
+
+        // Step 3 legacy/new mapping
+        parentName: parentPan.parentName || [primaryEarner.firstName, primaryEarner.lastName].filter(Boolean).join(' '),
+        parentPan: parentPan.parentPan || personalDetails.applicantPan,
+        parentPhone: parentPan.parentPhone || personalDetails.alternatePhone,
+        parentEmail: parentPan.parentEmail || personalDetails.email,
+        parentAddress: parentPan.parentAddress,
+        relationToStudent: parentPan.relationToStudent || 'Parent',
+        monthlyIncome: parentPan.monthlyIncome,
+        occupation: parentPan.occupation,
+        employer: parentPan.employer,
+
+        // Step 5 personal details
+        applicantPan: personalDetails.applicantPan || parentPan.parentPan,
+        gender: personalDetails.gender,
+        dateOfBirth: personalDetails.dateOfBirth,
+        maritalStatus: personalDetails.maritalStatus,
+        email: personalDetails.email,
+        alternatePhone: personalDetails.alternatePhone,
+        fatherName: personalDetails.fatherName,
+        motherName: personalDetails.motherName,
+        spouseName: personalDetails.spouseName,
+        educationLevel: personalDetails.educationLevel,
+        workExperience: personalDetails.workExperience,
+        companyType: personalDetails.companyType,
+
+        // Step 6 consents
         ...formData,
+
         applicationSummary,
         submittedAt: new Date().toISOString(),
       };
+
+      // Client-side guard for missing critical fields
+      const missing: string[] = [];
+      if (!payload.studentName) missing.push('Student Details (name)');
+      if (!payload.institutionName) missing.push('Student Details (institution)');
+      if (!payload.feeAmount) missing.push('Student Details (fee amount)');
+      if (!payload.selectedPlanId) missing.push('EMI Plan');
+      if (!payload.parentPan || !payload.parentName) missing.push('Parent PAN details');
+      if (!payload.applicantPan) missing.push('Personal Details (PAN)');
+
+      if (missing.length) {
+        console.warn('[onboarding] Missing fields before submit:', missing);
+        toast({
+          title: 'Missing information',
+          description: `Please complete: ${missing.join(', ')}`,
+          variant: 'destructive',
+        });
+        setSubmitting(false);
+        if (missing[0].startsWith('Student Details')) router.push('/parent/onboarding/steps/1');
+        else if (missing[0] === 'EMI Plan') router.push('/parent/onboarding/steps/2');
+        else if (missing[0].startsWith('Parent PAN')) router.push('/parent/onboarding/steps/3');
+        else if (missing[0].startsWith('Personal Details')) router.push('/parent/onboarding/steps/5');
+        return;
+      }
+
+      console.log('[onboarding] Submitting payload', payload);
 
       const response = await fetch("/api/parent/onboarding", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(completeData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[onboarding] Server error response:', errorData);
         throw new Error(errorData.error || "Failed to submit application");
       }
 

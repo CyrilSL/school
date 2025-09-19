@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "~/server/db";
-import { parentProfile, student, institution, organization, feeApplication, emiPlan } from "~/server/db/schema";
+import { parentProfile, student, institution, organization, feeApplication, emiPlan, feeStructure } from "~/server/db/schema";
 import { getServerSession } from "~/server/auth";
 import { eq, and } from "drizzle-orm";
 
@@ -13,6 +13,85 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+
+    // Debug: log top-level keys received (avoid dumping full PII by default)
+    try {
+      console.log("[onboarding] POST body keys:", Object.keys(body || {}));
+    } catch {}
+
+    // Normalize payload to support both legacy (student-details/parent-pan) and
+    // new (student-institution/primary-earner/personal-details) flows.
+    const enriched = {
+      // Student details
+      studentFirstName: body.studentFirstName,
+      studentLastName: body.studentLastName,
+      studentName: body.studentName ?? [body.studentFirstName, body.studentLastName].filter(Boolean).join(" "),
+      studentRollNumber: body.studentRollNumber ?? body.studentId ?? undefined,
+      studentDateOfBirth: body.studentDateOfBirth ?? undefined,
+      studentClass: body.studentClass ?? body.classStream ?? undefined,
+      studentSection: body.studentSection ?? undefined,
+      institutionName: body.institutionName,
+      institutionAddress: body.institutionAddress ?? body.location ?? undefined,
+      previousSchool: body.previousSchool ?? undefined,
+      feeAmount: body.feeAmount ?? body.annualFeeAmount ?? undefined,
+      feeType: body.feeType ?? (body.annualFeeAmount ? "Annual Fee" : undefined),
+
+      // EMI plan
+      selectedPlanId: body.selectedPlanId,
+
+      // Parent details (legacy + new mapping)
+      parentName: body.parentName ?? body.fullName ?? [body.firstName, body.lastName].filter(Boolean).join(" "),
+      parentPan: body.parentPan ?? body.applicantPan ?? undefined,
+      parentPhone: body.parentPhone ?? body.alternatePhone ?? undefined,
+      parentEmail: body.parentEmail ?? body.email ?? undefined,
+      parentAddress: body.parentAddress ?? undefined,
+      relationToStudent: body.relationToStudent ?? "Parent",
+      monthlyIncome: body.monthlyIncome ?? undefined,
+      occupation: body.occupation ?? undefined,
+      employer: body.employer ?? undefined,
+
+      // Personal details
+      applicantPan: body.applicantPan ?? body.parentPan ?? undefined,
+      gender: body.gender,
+      dateOfBirth: body.dateOfBirth,
+      maritalStatus: body.maritalStatus,
+      email: body.email,
+      alternatePhone: body.alternatePhone,
+      fatherName: body.fatherName,
+      motherName: body.motherName,
+      spouseName: body.spouseName,
+      educationLevel: body.educationLevel,
+      workExperience: body.workExperience,
+      companyType: body.companyType,
+
+      // Consents
+      termsAccepted: body.termsAccepted,
+      privacyAccepted: body.privacyAccepted,
+      creditCheckConsent: body.creditCheckConsent,
+      communicationConsent: body.communicationConsent,
+
+      // Summary passthrough
+      applicationSummary: body.applicationSummary,
+    } as any;
+
+    // Normalize selectedPlanId to canonical form when user selected from the new UI
+    const normalizePlan = (planId?: string) => {
+      switch (planId) {
+        case "plan-a":
+          return "9-months";
+        case "plan-b":
+          return "6-months";
+        case "plan-c":
+          return "12-months";
+        case "plan-d":
+          return "18-months";
+        case "plan-e":
+          return "24-months";
+        default:
+          return planId;
+      }
+    };
+    enriched.selectedPlanId = normalizePlan(enriched.selectedPlanId);
     
     // Extract data from the 6-step onboarding process
     const {
@@ -77,9 +156,10 @@ export async function POST(request: NextRequest) {
       parentPan: "Parent PAN",
       parentPhone: "Parent phone",
       parentEmail: "Parent email",
-      parentAddress: "Parent address",
+      // Make these optional for now to support new flow without address/income
+      // parentAddress: "Parent address",
       relationToStudent: "Relation to student",
-      monthlyIncome: "Monthly income",
+      // monthlyIncome: "Monthly income",
       applicantPan: "Applicant PAN",
       gender: "Gender",
       dateOfBirth: "Date of birth",
@@ -93,7 +173,8 @@ export async function POST(request: NextRequest) {
     };
 
     for (const [field, displayName] of Object.entries(requiredFields)) {
-      if (!body[field]) {
+      if (!enriched[field as keyof typeof enriched]) {
+        console.error("[onboarding] missing field:", field, displayName);
         return NextResponse.json({ 
           error: `Missing required field: ${displayName}` 
         }, { status: 400 });
@@ -102,7 +183,7 @@ export async function POST(request: NextRequest) {
 
     // Validate PAN format
     const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    if (!panRegex.test(parentPan) || !panRegex.test(applicantPan)) {
+    if (!panRegex.test(enriched.parentPan) || !panRegex.test(enriched.applicantPan)) {
       return NextResponse.json({ 
         error: "Invalid PAN card number format" 
       }, { status: 400 });
@@ -113,14 +194,14 @@ export async function POST(request: NextRequest) {
       where: eq(parentProfile.userId, session.user.id),
     });
 
-    if (existingProfile) {
+    if (existingProfile?.isOnboardingCompleted) {
       return NextResponse.json({ 
         error: "Onboarding already completed" 
       }, { status: 400 });
     }
 
     // Parse fee amount
-    const feeAmountNumber = parseFloat(feeAmount);
+    const feeAmountNumber = parseFloat(String(enriched.feeAmount));
     if (isNaN(feeAmountNumber) || feeAmountNumber <= 0) {
       return NextResponse.json({ 
         error: "Invalid fee amount" 
@@ -129,57 +210,77 @@ export async function POST(request: NextRequest) {
 
     // Start transaction to create all records
     const result = await db.transaction(async (tx) => {
-      // Create parent profile with comprehensive data
-      const [newParentProfile] = await tx.insert(parentProfile).values({
-        id: crypto.randomUUID(),
-        userId: session.user.id,
-        
+      // Create or update parent profile with comprehensive data
+      let newParentProfile;
+      const profileValues = {
         // Step 3: Parent PAN Details
-        fullName: parentName,
-        panCardNumber: parentPan,
-        phone: parentPhone,
-        email: parentEmail,
-        address: parentAddress,
-        relationToStudent,
-        monthlyIncome: monthlyIncome,
-        occupation: occupation || null,
-        employer: employer || null,
-        
+        fullName: enriched.parentName,
+        panCardNumber: enriched.parentPan,
+        phone: enriched.parentPhone,
+        email: enriched.parentEmail,
+        address: enriched.parentAddress || null,
+        relationToStudent: enriched.relationToStudent,
+        monthlyIncome: enriched.monthlyIncome || null,
+        occupation: enriched.occupation || null,
+        employer: enriched.employer || null,
+
         // Step 5: Personal Details
-        applicantPan: applicantPan,
-        gender: gender,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        maritalStatus: maritalStatus,
-        alternateEmail: email !== parentEmail ? email : null,
-        alternatePhone: alternatePhone || null,
-        fatherName: fatherName,
-        motherName: motherName,
-        spouseName: spouseName || null,
-        educationLevel: educationLevel || null,
-        workExperience: workExperience || null,
-        companyType: companyType || null,
-        
+        applicantPan: enriched.applicantPan,
+        gender: enriched.gender,
+        dateOfBirth: enriched.dateOfBirth ? new Date(enriched.dateOfBirth) : null,
+        maritalStatus: enriched.maritalStatus,
+        alternateEmail: enriched.email && enriched.email !== enriched.parentEmail ? enriched.email : null,
+        alternatePhone: enriched.alternatePhone || null,
+        fatherName: enriched.fatherName,
+        motherName: enriched.motherName,
+        spouseName: enriched.spouseName || null,
+        educationLevel: enriched.educationLevel || null,
+        workExperience: enriched.workExperience || null,
+        companyType: enriched.companyType || null,
+
         // Legacy fields for backward compatibility
-        annualIncome: monthlyIncome ? parseFloat(monthlyIncome.split('-')[0].replace(/[₹,]/g, '')) * 12 : null,
+        annualIncome: enriched.monthlyIncome ? parseFloat(enriched.monthlyIncome.split('-')[0].replace(/[₹,]/g, '')) * 12 : null,
         emergencyContactName: null,
-        emergencyContactPhone: alternatePhone || null,
-        
+        emergencyContactPhone: enriched.alternatePhone || null,
+
         // Step 6: Terms & Confirmation
-        termsAccepted: termsAccepted,
-        privacyAccepted: privacyAccepted,
-        creditCheckConsent: creditCheckConsent,
-        communicationConsent: communicationConsent,
-        
+        termsAccepted: enriched.termsAccepted,
+        privacyAccepted: enriched.privacyAccepted,
+        creditCheckConsent: enriched.creditCheckConsent,
+        communicationConsent: enriched.communicationConsent,
+
         // System fields
         isOnboardingCompleted: true,
-        createdAt: new Date(),
-      }).returning();
+      } as const;
+
+      if (existingProfile) {
+        const updated = await tx
+          .update(parentProfile)
+          .set({
+            ...profileValues,
+            updatedAt: new Date(),
+          })
+          .where(eq(parentProfile.userId, session.user.id))
+          .returning();
+        newParentProfile = updated[0]!;
+      } else {
+        const inserted = await tx
+          .insert(parentProfile)
+          .values({
+            id: crypto.randomUUID(),
+            userId: session.user.id,
+            ...profileValues,
+            createdAt: new Date(),
+          })
+          .returning();
+        newParentProfile = inserted[0]!;
+      }
 
       // Find or create institution
       let institutionId: string;
       
       const existingInstitution = await tx.query.institution.findFirst({
-        where: eq(institution.name, institutionName),
+        where: eq(institution.name, enriched.institutionName),
       });
 
       if (existingInstitution) {
@@ -188,8 +289,8 @@ export async function POST(request: NextRequest) {
         // Create a new organization for this institution
         const [newOrganization] = await tx.insert(organization).values({
           id: crypto.randomUUID(),
-          name: institutionName,
-          slug: institutionName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          name: enriched.institutionName!,
+          slug: enriched.institutionName!.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
           createdAt: new Date(),
         }).returning();
 
@@ -197,9 +298,9 @@ export async function POST(request: NextRequest) {
         const [newInstitution] = await tx.insert(institution).values({
           id: crypto.randomUUID(),
           organizationId: newOrganization.id,
-          name: institutionName,
+          name: enriched.institutionName!,
           type: "school", // Default to school
-          address: institutionAddress || null,
+          address: enriched.institutionAddress || null,
           createdAt: new Date(),
         }).returning();
 
@@ -213,41 +314,43 @@ export async function POST(request: NextRequest) {
         institutionId,
         
         // Step 1: Student Details
-        name: studentName,
-        rollNumber: studentRollNumber || null,
-        dateOfBirth: studentDateOfBirth ? new Date(studentDateOfBirth) : null,
-        class: studentClass || null,
-        section: studentSection || null,
-        previousSchool: previousSchool || null,
+        name: enriched.studentName!,
+        rollNumber: enriched.studentRollNumber || null,
+        dateOfBirth: enriched.studentDateOfBirth ? new Date(enriched.studentDateOfBirth) : null,
+        class: enriched.studentClass || null,
+        section: enriched.studentSection || null,
+        previousSchool: enriched.previousSchool || null,
         
         // Fee Information
         feeAmount: feeAmountNumber.toFixed(2),
-        feeType: feeType,
+        feeType: enriched.feeType!,
         
         // System fields
-        admissionDate: studentDateOfBirth ? new Date(studentDateOfBirth) : new Date(),
+        admissionDate: enriched.studentDateOfBirth ? new Date(enriched.studentDateOfBirth) : new Date(),
         createdAt: new Date(),
       }).returning();
 
       // Find the selected EMI plan
       const selectedEmiPlan = await tx.query.emiPlan.findFirst({
-        where: eq(emiPlan.id, selectedPlanId),
+        where: eq(emiPlan.id, enriched.selectedPlanId),
       });
 
       // If no EMI plan found, create a custom one based on the selection
-      let emiPlanId = selectedPlanId;
+      let emiPlanId = enriched.selectedPlanId as string;
       if (!selectedEmiPlan) {
         const planMap: Record<string, { duration: number, name: string }> = {
           "3-months": { duration: 3, name: "3 Month Plan" },
           "6-months": { duration: 6, name: "6 Month Plan" },
           "9-months": { duration: 9, name: "9 Month Plan" },
           "12-months": { duration: 12, name: "12 Month Plan" },
+          "18-months": { duration: 18, name: "18 Month Plan" },
+          "24-months": { duration: 24, name: "24 Month Plan" },
         };
 
-        const planConfig = planMap[selectedPlanId];
+        const planConfig = planMap[emiPlanId];
         if (planConfig) {
           const [newEmiPlan] = await tx.insert(emiPlan).values({
-            id: selectedPlanId,
+            id: emiPlanId,
             name: planConfig.name,
             installments: planConfig.duration,
             interestRate: "0.00",
@@ -269,18 +372,50 @@ export async function POST(request: NextRequest) {
         "6-months": 6,
         "9-months": 9,
         "12-months": 12,
+        "18-months": 18,
+        "24-months": 24,
       };
       
-      const installments = planMap[selectedPlanId] || 6;
+      const installments = planMap[emiPlanId] || 6;
       const monthlyInstallment = Math.ceil(feeAmountNumber / installments);
       const processingFee = feeAmountNumber * 0.02 * (installments / 3);
       const totalAmount = feeAmountNumber + processingFee;
+
+      // Find or create a fee structure for this application (FK required)
+      const academicYear = (() => {
+        const now = new Date();
+        const y = now.getFullYear();
+        const next = y + 1;
+        return `${y}-${next}`;
+      })();
+
+      const feeName = enriched.feeType || 'Tuition Fee';
+
+      let fs = await tx.query.feeStructure.findFirst({
+        where: and(
+          eq(feeStructure.institutionId, institutionId),
+          eq(feeStructure.name, feeName),
+        ),
+      });
+
+      if (!fs) {
+        const insertedFs = await tx.insert(feeStructure).values({
+          id: crypto.randomUUID(),
+          institutionId,
+          name: feeName,
+          description: 'Auto-created during onboarding',
+          amount: feeAmountNumber.toFixed(2),
+          academicYear,
+          createdAt: new Date(),
+        }).returning();
+        fs = insertedFs[0]!;
+      }
 
       // Create fee application record
       const [feeApp] = await tx.insert(feeApplication).values({
         id: crypto.randomUUID(),
         studentId: newStudent.id,
-        feeStructureId: crypto.randomUUID(), // We'll need to create a fee structure or make this optional
+        feeStructureId: fs.id,
         emiPlanId: emiPlanId,
         status: "platform_review",
         totalAmount: totalAmount.toFixed(2),

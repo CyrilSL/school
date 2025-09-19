@@ -240,7 +240,6 @@ export default function PersonalDetailsForm() {
                 placeholder="ABCDE1234F"
                 maxLength={10}
                 className="h-12"
-                disabled
               />
               <p className="text-sm text-gray-500">This is pre-filled from your parent PAN details</p>
             </div>

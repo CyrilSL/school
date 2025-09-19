@@ -453,7 +453,7 @@ export default function PersonalDetailsForm() {
               type="button"
               onClick={handleNext}
               disabled={!isFormValid || isSaving}
-              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed text-white"
             >
               {isSaving ? (
                 <>

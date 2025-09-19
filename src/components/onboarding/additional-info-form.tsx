@@ -250,7 +250,7 @@ export default function AdditionalInfoForm() {
               type="button"
               onClick={handleNext}
               disabled={!isFormValid}
-              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed text-white"
             >
               Next: Student Info
               <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

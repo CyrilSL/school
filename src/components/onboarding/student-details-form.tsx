@@ -281,7 +281,7 @@ export default function StudentDetailsForm() {
             <Button
               type="button"
               onClick={handleNext}
-              className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 px-8"
+              className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 px-8 text-white"
             >
               Next: EMI Plan
               <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

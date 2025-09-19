@@ -233,7 +233,7 @@ export default function OnboardingIntroForm() {
             <Button
               type="button"
               onClick={handleNext}
-              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 py-3 text-lg font-semibold shadow-lg transform transition duration-200 hover:scale-105"
+              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 py-3 text-lg font-semibold shadow-lg transform transition duration-200 hover:scale-105 text-white"
             >
               Continue to Loan Application
               <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

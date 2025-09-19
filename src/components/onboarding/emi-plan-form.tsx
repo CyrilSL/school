@@ -295,7 +295,7 @@ export default function EmiPlanForm() {
               type="button"
               onClick={handleNext}
               disabled={!formData.selectedPlanId}
-              className="bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 px-8"
+              className="bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 px-8 text-white"
             >
               Next: Parent PAN
               <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

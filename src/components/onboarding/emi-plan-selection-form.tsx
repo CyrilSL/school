@@ -316,11 +316,11 @@ export default function EmiPlanSelectionForm() {
             <span>Back</span>
           </Button>
           
-          <Button
-            onClick={handleProceed}
-            disabled={!selectedPlanId || isSaving}
-            className="bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 px-8"
-          >
+        <Button
+          onClick={handleProceed}
+          disabled={!selectedPlanId || isSaving}
+          className="bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 px-8 text-white"
+        >
             {isSaving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

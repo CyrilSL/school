@@ -329,7 +329,7 @@ export default function ParentPanForm() {
             <Button
               type="button"
               onClick={handleNext}
-              className="bg-gradient-to-r from-purple-600 to-pink-700 hover:from-purple-700 hover:to-pink-800 px-8"
+              className="bg-gradient-to-r from-purple-600 to-pink-700 hover:from-purple-700 hover:to-pink-800 px-8 text-white"
             >
               Next: Welcome
               <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

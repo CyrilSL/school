@@ -219,7 +219,7 @@ export default function PrimaryEarnerForm() {
           <Button
             onClick={handleProceed}
             disabled={!isFormValid || isSaving}
-            className="bg-gradient-to-r from-purple-600 to-pink-700 hover:from-purple-700 hover:to-pink-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-r from-purple-600 to-pink-700 hover:from-purple-700 hover:to-pink-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed text-white"
           >
             {isSaving ? (
               <>

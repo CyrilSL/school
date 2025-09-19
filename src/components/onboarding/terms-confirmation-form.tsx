@@ -379,7 +379,7 @@ export default function TermsConfirmationForm() {
               type="button"
               onClick={handleSubmit}
               disabled={submitting || !formData.termsAccepted || !formData.privacyAccepted || !formData.creditCheckConsent}
-              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 py-3 text-lg font-semibold shadow-lg transform transition duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 py-3 text-lg font-semibold shadow-lg transform transition duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-white"
             >
               {submitting ? (
                 <>

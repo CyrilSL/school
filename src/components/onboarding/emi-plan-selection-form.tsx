@@ -140,7 +140,7 @@ export default function EmiPlanSelectionForm() {
 
   const saveToDatabase = async () => {
     try {
-      const response = await fetch("/api/parent/onboarding/partial", {
+      const response = await fetch("/api/parent/apply/partial", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -192,13 +192,13 @@ export default function EmiPlanSelectionForm() {
     setIsSaving(false);
 
     if (saved) {
-      router.push("/parent/onboarding/steps/3");
+      router.push("/parent/apply/steps/3");
     }
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/parent/onboarding/steps/1");
+    router.push("/parent/apply/steps/1");
   };
 
   if (loading) {

@@ -21,7 +21,7 @@ export default async function ApplicationDetailsPage(context: { params: { id: st
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const cookie = headersList.get('cookie') || '';
 
-    const progressResponse = await fetch(`${protocol}://${host}/api/parent/onboarding/partial`, {
+    const progressResponse = await fetch(`${protocol}://${host}/api/parent/apply/partial`, {
       headers: {
         'Cookie': cookie,
       },
@@ -37,7 +37,7 @@ export default async function ApplicationDetailsPage(context: { params: { id: st
   // If onboarding is not completed, redirect to onboarding
   if (!onboardingProgress?.isCompleted) {
     const nextStep = onboardingProgress?.nextStep || 1;
-    redirect(`/parent/onboarding/steps/${nextStep}`);
+    redirect(`/parent/apply/steps/${nextStep}`);
   }
 
 

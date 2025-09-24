@@ -47,11 +47,11 @@ export default function OnboardingIntroForm() {
   }, []);
 
   const handleNext = () => {
-    router.push("/parent/onboarding/steps/5");
+    router.push("/parent/apply/steps/5");
   };
 
   const handleBack = () => {
-    router.push("/parent/onboarding/steps/3");
+    router.push("/parent/apply/steps/3");
   };
 
   const handleSaveAndExit = () => {

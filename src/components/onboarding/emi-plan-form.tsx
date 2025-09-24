@@ -43,7 +43,7 @@ export default function EmiPlanForm() {
         description: "You need to complete the student details step before proceeding.",
         variant: "destructive"
       });
-      router.push("/parent/onboarding/steps/1");
+      router.push("/parent/apply/steps/1");
       return;
     }
 
@@ -56,7 +56,7 @@ export default function EmiPlanForm() {
         description: "Please go back and enter a valid fee amount.",
         variant: "destructive"
       });
-      router.push("/parent/onboarding/steps/1");
+      router.push("/parent/apply/steps/1");
       return;
     }
 
@@ -144,12 +144,12 @@ export default function EmiPlanForm() {
     if (!validateForm()) return;
     
     saveProgress();
-    router.push("/parent/onboarding/steps/3");
+    router.push("/parent/apply/steps/3");
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/parent/onboarding/steps/1");
+    router.push("/parent/apply/steps/1");
   };
 
   const handleSaveAndExit = () => {

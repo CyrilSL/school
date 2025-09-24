@@ -48,7 +48,7 @@ export const FeaturesClient = () => {
                   Sign up today!
                 </Link>
                 <Link
-                  href="/parent/onboarding"
+                  href="/parent/apply"
                   className="inline-flex items-center border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-bold py-3 px-6 rounded-lg transition-colors duration-300"
                 >
                   Explore MyFee for Parents

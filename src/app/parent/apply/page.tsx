@@ -12,14 +12,14 @@ export default function ParentOnboarding() {
     async function determineNextStep() {
       try {
         console.log("ParentOnboarding: Fetching onboarding progress...");
-        const response = await fetch("/api/parent/onboarding/partial");
+        const response = await fetch("/api/parent/apply/partial");
 
         console.log("ParentOnboarding: API Response status:", response.status);
 
         if (!response.ok) {
           console.log("ParentOnboarding: API failed, defaulting to step 1");
           // If API fails, default to step 1
-          router.push("/parent/onboarding/steps/1");
+          router.push("/parent/apply/steps/1");
           return;
         }
 
@@ -33,12 +33,12 @@ export default function ParentOnboarding() {
         } else {
           console.log(`ParentOnboarding: Redirecting to step ${data.nextStep}`);
           // Redirect to the next incomplete step
-          router.push(`/parent/onboarding/steps/${data.nextStep}`);
+          router.push(`/parent/apply/steps/${data.nextStep}`);
         }
       } catch (error) {
         console.error("ParentOnboarding: Error determining next step:", error);
         // Default to step 1 on error
-        router.push("/parent/onboarding/steps/1");
+        router.push("/parent/apply/steps/1");
       } finally {
         setLoading(false);
       }

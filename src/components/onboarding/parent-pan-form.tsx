@@ -123,12 +123,12 @@ export default function ParentPanForm() {
     if (!validateForm()) return;
     
     saveProgress();
-    router.push("/parent/onboarding/steps/4");
+    router.push("/parent/apply/steps/4");
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/parent/onboarding/steps/2");
+    router.push("/parent/apply/steps/2");
   };
 
   const handleSaveAndExit = () => {

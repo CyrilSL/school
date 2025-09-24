@@ -65,7 +65,7 @@ export default async function ParentDashboard() {
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const cookie = headersList.get('cookie') || '';
 
-    const progressResponse = await fetch(`${protocol}://${host}/api/parent/onboarding/partial`, {
+    const progressResponse = await fetch(`${protocol}://${host}/api/parent/apply/partial`, {
       headers: {
         'Cookie': cookie,
       },
@@ -94,7 +94,7 @@ export default async function ParentDashboard() {
       actionText: "Complete now",
       actionUrl: onboardingProgress?.isCompleted
         ? "/parent/dashboard/applications/1496252"
-        : `/parent/onboarding/steps/${onboardingProgress?.nextStep || 1}`
+        : `/parent/apply/steps/${onboardingProgress?.nextStep || 1}`
     },
     {
       id: "1474706",
@@ -107,7 +107,7 @@ export default async function ParentDashboard() {
       actionText: "View Details",
       actionUrl: onboardingProgress?.isCompleted
         ? "/parent/dashboard/applications/1474706"
-        : `/parent/onboarding/steps/${onboardingProgress?.nextStep || 1}`
+        : `/parent/apply/steps/${onboardingProgress?.nextStep || 1}`
     }
   ];
 

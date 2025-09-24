@@ -217,16 +217,16 @@ export default function TermsConfirmationForm() {
           variant: 'destructive',
         });
         setSubmitting(false);
-        if (missing[0].startsWith('Student Details')) router.push('/parent/onboarding/steps/1');
-        else if (missing[0] === 'EMI Plan') router.push('/parent/onboarding/steps/2');
-        else if (missing[0].startsWith('Parent PAN')) router.push('/parent/onboarding/steps/3');
-        else if (missing[0].startsWith('Personal Details')) router.push('/parent/onboarding/steps/5');
+        if (missing[0].startsWith('Student Details')) router.push('/parent/apply/steps/1');
+        else if (missing[0] === 'EMI Plan') router.push('/parent/apply/steps/2');
+        else if (missing[0].startsWith('Parent PAN')) router.push('/parent/apply/steps/3');
+        else if (missing[0].startsWith('Personal Details')) router.push('/parent/apply/steps/5');
         return;
       }
 
       console.log('[onboarding] Submitting payload', payload);
 
-      const response = await fetch("/api/parent/onboarding", {
+      const response = await fetch("/api/parent/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -268,7 +268,7 @@ export default function TermsConfirmationForm() {
 
   const handleBack = () => {
     saveProgress();
-    router.push("/parent/onboarding/steps/5");
+    router.push("/parent/apply/steps/5");
   };
 
   const handleSaveAndExit = () => {

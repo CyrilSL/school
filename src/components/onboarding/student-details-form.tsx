@@ -82,7 +82,7 @@ export default function StudentDetailsForm() {
     if (!validateForm()) return;
     
     saveProgress();
-    router.push("/parent/onboarding/steps/2");
+    router.push("/parent/apply/steps/2");
   };
 
   const handleSaveAndExit = () => {

@@ -37,7 +37,7 @@ export default function AdditionalInfoForm() {
         description: "You need to complete the parent information step before proceeding.",
         variant: "destructive"
       });
-      router.push("/parent/onboarding/steps/1");
+      router.push("/parent/apply/steps/1");
       return;
     }
 
@@ -86,12 +86,12 @@ export default function AdditionalInfoForm() {
     if (!validateForm()) return;
     
     saveProgress();
-    router.push("/parent/onboarding/steps/3");
+    router.push("/parent/apply/steps/3");
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/parent/onboarding/steps/1");
+    router.push("/parent/apply/steps/1");
   };
 
   const handleSaveAndExit = () => {
@@ -105,7 +105,7 @@ export default function AdditionalInfoForm() {
 
   const handleSkip = () => {
     saveProgress();
-    router.push("/parent/onboarding/steps/3");
+    router.push("/parent/apply/steps/3");
   };
 
   if (loading) {

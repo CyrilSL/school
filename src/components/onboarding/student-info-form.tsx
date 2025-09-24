@@ -46,7 +46,7 @@ export default function StudentInfoForm() {
         description: "You need to complete the parent information step before proceeding.",
         variant: "destructive"
       });
-      router.push("/parent/onboarding/steps/1");
+      router.push("/parent/apply/steps/1");
       return;
     }
 
@@ -104,7 +104,7 @@ export default function StudentInfoForm() {
         ...formData
       };
 
-      const response = await fetch("/api/parent/onboarding", {
+      const response = await fetch("/api/parent/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -141,7 +141,7 @@ export default function StudentInfoForm() {
 
   const handleBack = () => {
     saveProgress();
-    router.push("/parent/onboarding/steps/2");
+    router.push("/parent/apply/steps/2");
   };
 
   const handleSaveAndExit = () => {

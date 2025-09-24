@@ -58,7 +58,7 @@ export default function PrimaryEarnerForm() {
 
   const saveToDatabase = async () => {
     try {
-      const response = await fetch("/api/parent/onboarding/partial", {
+      const response = await fetch("/api/parent/apply/partial", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -105,13 +105,13 @@ export default function PrimaryEarnerForm() {
 
     if (saved) {
       // Navigate to next step
-      router.push("/parent/onboarding/steps/4");
+      router.push("/parent/apply/steps/4");
     }
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/parent/onboarding/steps/2");
+    router.push("/parent/apply/steps/2");
   };
 
   if (loading) {

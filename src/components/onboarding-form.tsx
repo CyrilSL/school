@@ -115,7 +115,7 @@ export default function OnboardingForm() {
     setSubmitting(true);
     
     try {
-      const response = await fetch("/api/parent/onboarding", {
+      const response = await fetch("/api/parent/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

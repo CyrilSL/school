@@ -129,7 +129,7 @@ export default function PersonalDetailsForm() {
 
   const saveToDatabase = async () => {
     try {
-      const response = await fetch("/api/parent/onboarding/partial", {
+      const response = await fetch("/api/parent/apply/partial", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -184,13 +184,13 @@ export default function PersonalDetailsForm() {
     setIsSaving(false);
 
     if (saved) {
-      router.push("/parent/onboarding/steps/6");
+      router.push("/parent/apply/steps/6");
     }
   };
 
   const handleBack = () => {
     saveProgress();
-    router.push("/parent/onboarding/steps/4");
+    router.push("/parent/apply/steps/4");
   };
 
   const handleSaveAndExit = () => {

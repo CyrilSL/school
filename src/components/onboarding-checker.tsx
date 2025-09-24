@@ -9,17 +9,17 @@ export default function OnboardingChecker() {
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       try {
-        const response = await fetch("/api/parent/onboarding");
+        const response = await fetch("/api/parent/apply");
         if (response.ok) {
           const data = await response.json();
           if (!data.isOnboardingCompleted) {
-            router.push("/parent/onboarding");
+            router.push("/parent/apply");
           }
         }
       } catch (error) {
         console.error("Error checking onboarding:", error);
         // On error, redirect to onboarding to be safe
-        router.push("/parent/onboarding");
+        router.push("/parent/apply");
       }
     };
 

@@ -123,7 +123,7 @@ export default function StudentInstitutionForm() {
 
   const saveToDatabase = async () => {
     try {
-      const response = await fetch("/api/parent/onboarding/partial", {
+      const response = await fetch("/api/parent/apply/partial", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,7 +176,7 @@ export default function StudentInstitutionForm() {
     setIsSaving(false);
 
     if (saved) {
-      router.push("/parent/onboarding/steps/2");
+      router.push("/parent/apply/steps/2");
     }
   };
 

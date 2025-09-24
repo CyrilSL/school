@@ -25,7 +25,7 @@ export default function ResumeOnboarding() {
   useEffect(() => {
     async function fetchOnboardingProgress() {
       try {
-        const response = await fetch("/api/parent/onboarding/partial");
+        const response = await fetch("/api/parent/apply/partial");
 
         if (!response.ok) {
           setLoading(false);
@@ -62,7 +62,7 @@ export default function ResumeOnboarding() {
   if (!progressData) return null;
 
   const getResumeLink = () => {
-    return `/parent/onboarding/steps/${progressData.nextStep}`;
+    return `/parent/apply/steps/${progressData.nextStep}`;
   };
 
   const getProgressPercentage = () => {

@@ -112,10 +112,17 @@ export default async function ParentDashboard() {
   ];
 
   return (
-    <div className="max-w-6xl">
+    <div className="w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Applications</h1>
-        <p className="text-gray-600">Manage your fee applications and EMI plans</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Applications</h1>
+            <p className="text-gray-600">Manage your fee applications and EMI plans</p>
+          </div>
+          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+            <a href="/parent/apply">+ New Application</a>
+          </Button>
+        </div>
       </div>
 
       {/* Application Cards */}
@@ -138,38 +145,44 @@ export default async function ParentDashboard() {
             </CardHeader>
 
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <div className="text-gray-600">Academic Year</div>
-                  <div className="font-medium">{application.academicYear}</div>
-                </div>
-                <div>
-                  <div className="text-gray-600">Student Name</div>
-                  <div className="font-medium">{application.studentName}</div>
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs text-gray-600">Academic Year</div>
+                    <div className="font-medium text-sm">{application.academicYear}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs text-gray-600">Student Name</div>
+                    <div className="font-medium text-sm">{application.studentName}</div>
+                  </CardContent>
+                </Card>
               </div>
 
-              <div className="text-sm">
-                <div className="text-gray-600">Total Fees</div>
-                <div className="text-xl font-bold text-green-600">
-                  ₹{application.totalFees.toLocaleString()}
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <div className="text-sm text-gray-700 mb-3">{application.statusText}</div>
-                <Button
-                  asChild
-                  className={`w-full ${
-                    application.status === "emi_pending"
-                      ? "bg-orange-600 hover:bg-orange-700"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }`}
-                >
-                  <a href={application.actionUrl}>{application.actionText}</a>
-                </Button>
-              </div>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-xs text-gray-600">Total Fees</div>
+                  <div className="text-xl font-bold text-green-600">
+                    ₹{application.totalFees.toLocaleString()}
+                  </div>
+                </CardContent>
+              </Card>
             </CardContent>
+
+            <div className="p-6 pt-0">
+              <div className="text-sm text-gray-700 mb-3">{application.statusText}</div>
+              <Button
+                asChild
+                className={`w-full text-white ${
+                  application.status === "emi_pending"
+                    ? "bg-orange-600 hover:bg-orange-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                <a href={application.actionUrl}>{application.actionText}</a>
+              </Button>
+            </div>
           </Card>
         ))}
       </div>

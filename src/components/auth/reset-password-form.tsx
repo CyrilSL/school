@@ -66,7 +66,7 @@ function ResetPasswordFormNoSuspense({
             title: "Success",
             description: "Password reset successful. Login to continue.",
           });
-          router.push("/signin");
+          router.push("/");
         },
         onError: (ctx: ErrorContext) => {
           toast({

@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { env } from "~/env";
 import type { Session } from "~/server/auth";
 
-const authRoutes = ["/signin", "/signup", "/signup/parent", "/signup/institution", "/login/parent", "/login/institution"];
+const authRoutes = ["/signup", "/signup/parent", "/signup/institution", "/login/parent", "/login/institution"];
 const passwordRoutes = ["/reset-password", "/forgot-password"];
 const adminRoutes = ["/admin"];
 // const noAuthRoutes = ["/test"];
@@ -38,7 +38,7 @@ export default async function authMiddleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    return NextResponse.redirect(new URL("/signin", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   if (isAuthRoute || isPasswordRoute) {

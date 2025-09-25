@@ -12,5 +12,9 @@ export default async function ParentOnboardingLayout({
     redirect("/login/parent");
   }
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {children}
+    </div>
+  );
 }

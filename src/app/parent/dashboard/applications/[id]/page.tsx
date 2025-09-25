@@ -5,8 +5,8 @@ import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 
-export default async function ApplicationDetailsPage(context: { params: { id: string } }) {
-  const { params } = context;
+export default async function ApplicationDetailsPage(context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   const session = await getServerSession();
 
   if (!session?.user) {
@@ -200,22 +200,8 @@ export default async function ApplicationDetailsPage(context: { params: { id: st
             <CardTitle>Document Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              {mockApplication.documents.map((doc, index) => (
-                <Card key={index}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-medium text-sm">{doc.name}</div>
-                        <div className="text-xs text-gray-500 mt-1">Uploaded: {doc.uploadedAt}</div>
-                      </div>
-                      <Badge className={getStatusColor(doc.status)}>
-                        {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center text-gray-500 py-8">
+              Document management coming soon
             </div>
           </CardContent>
         </Card>
@@ -226,25 +212,26 @@ export default async function ApplicationDetailsPage(context: { params: { id: st
             <CardTitle>Payment Schedule</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              {mockApplication.paymentSchedule.map((payment, index) => (
-                <Card key={index}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-medium text-sm">{payment.month}</div>
-                        <div className="text-xs text-gray-500 mt-1">Due: {payment.dueDate}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">₹{payment.amount.toLocaleString()}</div>
-                        <Badge className={getStatusColor(payment.status)}>
-                          {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            <div className="space-y-2">
+              {installments.map((installment: any, index: number) => (
+                <div key={index} className="flex justify-between items-center p-3 border rounded">
+                  <div>
+                    <div className="font-medium text-sm">Installment {index + 1}</div>
+                    <div className="text-xs text-gray-500">Due: {installment.dueDate ? new Date(installment.dueDate).toLocaleDateString() : '-'}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">₹{installment.amount ? Number(installment.amount).toLocaleString() : '-'}</div>
+                    <Badge className={getStatusColor(installment.status || 'pending')}>
+                      {(installment.status || 'pending').charAt(0).toUpperCase() + (installment.status || 'pending').slice(1)}
+                    </Badge>
+                  </div>
+                </div>
               ))}
+              {installments.length === 0 && (
+                <div className="text-center text-gray-500 py-4">
+                  No payment schedule available
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -255,7 +242,7 @@ export default async function ApplicationDetailsPage(context: { params: { id: st
         <Button variant="outline" asChild>
           <a href="/parent/dashboard">Back to Applications</a>
         </Button>
-        {mockApplication.status === "emi_pending" && (
+        {application.status === "emi_pending" && (
           <Button className="bg-orange-600 hover:bg-orange-700">
             Complete EMI Form
           </Button>

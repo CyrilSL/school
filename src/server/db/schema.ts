@@ -1,7 +1,7 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import { sql } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -344,3 +344,35 @@ export const parentProfile = createTable("parent_profile", {
     () => new Date(),
   ),
 });
+
+// Relations
+export const feeApplicationRelations = relations(feeApplication, ({ one }) => ({
+  student: one(student, {
+    fields: [feeApplication.studentId],
+    references: [student.id],
+  }),
+  feeStructure: one(feeStructure, {
+    fields: [feeApplication.feeStructureId],
+    references: [feeStructure.id],
+  }),
+  emiPlan: one(emiPlan, {
+    fields: [feeApplication.emiPlanId],
+    references: [emiPlan.id],
+  }),
+}));
+
+export const studentRelations = relations(student, ({ one, many }) => ({
+  parent: one(user, {
+    fields: [student.parentId],
+    references: [user.id],
+  }),
+  feeApplications: many(feeApplication),
+}));
+
+export const feeStructureRelations = relations(feeStructure, ({ many }) => ({
+  feeApplications: many(feeApplication),
+}));
+
+export const emiPlanRelations = relations(emiPlan, ({ many }) => ({
+  feeApplications: many(feeApplication),
+}));

@@ -2,10 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { Calendar } from "~/components/ui/calendar";
 import { useToast } from "~/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
@@ -260,14 +265,40 @@ export default function PersonalDetailsForm() {
 
             <div className="space-y-2">
               <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                className="h-12"
-                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "h-12 w-full justify-start text-left font-normal",
+                      !formData.dateOfBirth && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.dateOfBirth ? (
+                      format(new Date(formData.dateOfBirth), "PPP")
+                    ) : (
+                      <span>Pick your date of birth</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-white" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        handleInputChange("dateOfBirth", format(date, "yyyy-MM-dd"));
+                      }
+                    }}
+                    disabled={(date) =>
+                      date > new Date(new Date().setFullYear(new Date().getFullYear() - 18)) ||
+                      date < new Date("1900-01-01")
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
@@ -453,7 +484,7 @@ export default function PersonalDetailsForm() {
               type="button"
               onClick={handleNext}
               disabled={!isFormValid || isSaving}
-              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+              className="bg-blue-600 hover:bg-blue-700 px-8 disabled:opacity-50 disabled:cursor-not-allowed text-white"
             >
               {isSaving ? (
                 <>

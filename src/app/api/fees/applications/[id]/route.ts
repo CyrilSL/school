@@ -4,13 +4,14 @@ import { feeApplication, student, feeStructure, emiPlan } from "~/server/db/sche
 import { getServerSession } from "~/server/auth";
 import { eq } from "drizzle-orm";
 
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const appId = context?.params?.id;
+    const params = await context.params;
+    const appId = params?.id;
     if (!appId) {
       return NextResponse.json({ error: "No application ID" }, { status: 400 });
     }

@@ -319,7 +319,7 @@ export default function EmiPlanSelectionForm() {
         <Button
           onClick={handleProceed}
           disabled={!selectedPlanId || isSaving}
-          className="bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 px-8 text-white"
+          className="bg-blue-600 hover:bg-blue-700 px-8 text-white"
         >
             {isSaving ? (
               <>

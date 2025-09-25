@@ -437,7 +437,7 @@ export default function StudentInstitutionForm() {
           type="button"
           onClick={handleShowPlans}
           disabled={!isFormValid || isSaving}
-          className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 px-8 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+          className="bg-blue-600 hover:bg-blue-700 px-8 disabled:opacity-50 disabled:cursor-not-allowed text-white"
         >
             {isSaving ? (
               <>

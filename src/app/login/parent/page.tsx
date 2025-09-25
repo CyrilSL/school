@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/button";
@@ -48,7 +49,16 @@ export default function ParentLogin() {
       {/* Simple top bar for consistency with homepage */}
       <div className="bg-white/95 border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 h-16 flex items-center">
-          <Link href="/" className="text-2xl font-bold text-blue-600">MyFee</Link>
+          <Link href="/" className="flex items-center space-x-2">
+            <Image
+              src="/logo.png"
+              alt="MyFee Logo"
+              width={32}
+              height={32}
+              className="h-8 w-8"
+            />
+            <span className="text-2xl font-bold text-blue-600">MyFee</span>
+          </Link>
         </div>
       </div>
 
@@ -64,17 +74,22 @@ export default function ParentLogin() {
 
           {/* Demo Credentials Card */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h3 className="text-blue-700 font-medium mb-2">Demo Credentials</h3>
-            <div className="text-sm text-blue-700 space-y-1">
-              <p>Email: parent@example.com</p>
-              <p>Password: parent123</p>
+            <div className="flex items-center space-x-3 mb-3">
+              <Image
+                src="/logo.png"
+                alt="MyFee Logo"
+                width={24}
+                height={24}
+                className="h-6 w-6"
+              />
+              <h3 className="text-blue-700 font-medium">Use Demo Credentials for both logins</h3>
             </div>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={fillDemoCredentials}
-              className="mt-3 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
             >
               Use Demo Credentials
             </Button>

@@ -27,9 +27,10 @@ export default function ParentOnboarding() {
         console.log("ParentOnboarding: API Response data:", data);
 
         if (data.isCompleted) {
-          console.log("ParentOnboarding: Onboarding complete, going to dashboard");
-          // If onboarding is complete, go to dashboard
-          router.push("/parent/dashboard");
+          console.log("ParentOnboarding: Onboarding complete, starting new application");
+          // If onboarding is complete, user wants to create a new application
+          // Start from step 1 for new application flow
+          router.push("/parent/apply/steps/1");
         } else {
           console.log(`ParentOnboarding: Redirecting to step ${data.nextStep}`);
           // Redirect to the next incomplete step
@@ -48,7 +49,7 @@ export default function ParentOnboarding() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
         <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
         <h2 className="text-xl font-semibold text-gray-800 mb-2">Loading your progress...</h2>

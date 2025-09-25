@@ -105,7 +105,7 @@ export default function OnboardingIntroForm() {
     <div className="max-w-6xl mx-auto">
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white px-8 py-12">
+        <div className="bg-blue-600 text-white px-8 py-12">
           <div className="text-center max-w-4xl mx-auto">
             <h2 className="text-4xl font-bold mb-4">
               You're Just 2 Steps Away from Securing {studentName}'s Future! 🎓
@@ -233,7 +233,7 @@ export default function OnboardingIntroForm() {
             <Button
               type="button"
               onClick={handleNext}
-              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 py-3 text-lg font-semibold shadow-lg transform transition duration-200 hover:scale-105 text-white"
+              className="bg-blue-600 hover:bg-blue-700 px-8 py-3 text-lg font-semibold shadow-lg transform transition duration-200 hover:scale-105 text-white"
             >
               Continue to Loan Application
               <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

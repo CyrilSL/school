@@ -10,6 +10,7 @@ import {
 import { db } from "~/server/db";
 
 export const auth = betterAuth({
+  secret: env.BETTER_AUTH_SECRET,
   database: drizzleAdapter(db, {
     provider: "pg",
   }),

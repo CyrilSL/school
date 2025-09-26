@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "~/server/db";
-import { parentProfile, student, institution, organization } from "~/server/db/schema";
+import { parentProfile, student, institution, organization, feeStructure, feeApplication } from "~/server/db/schema";
 import { getServerSession } from "~/server/auth";
 import { eq } from "drizzle-orm";
 
@@ -86,6 +86,15 @@ async function handleStep1(parentProfileId: string, data: any) {
     annualFeeAmount,
   } = data;
 
+  // Get parent user ID
+  const parentProfileRecord = await db.query.parentProfile.findFirst({
+    where: eq(parentProfile.id, parentProfileId)
+  });
+
+  if (!parentProfileRecord) {
+    throw new Error("Parent profile not found");
+  }
+
   // Find or create institution
   let institutionRecord = await db.query.institution.findFirst({
     where: eq(institution.name, institutionName),
@@ -113,11 +122,9 @@ async function handleStep1(parentProfileId: string, data: any) {
     institutionRecord = newInstitution;
   }
 
-  // Check if student already exists for this parent and institution
-  const existingStudent = await db.query.student.findFirst({
-    where: eq(student.parentId, (await db.query.parentProfile.findFirst({
-      where: eq(parentProfile.id, parentProfileId)
-    }))!.userId),
+  // Check if student already exists for this parent
+  let existingStudent = await db.query.student.findFirst({
+    where: eq(student.parentId, parentProfileRecord.userId),
   });
 
   const studentData = {
@@ -130,33 +137,113 @@ async function handleStep1(parentProfileId: string, data: any) {
     updatedAt: new Date(),
   };
 
+  let studentRecord;
+
   if (existingStudent) {
     // Update existing student
-    await db.update(student)
+    const [updatedStudent] = await db.update(student)
       .set(studentData)
-      .where(eq(student.id, existingStudent.id));
+      .where(eq(student.id, existingStudent.id))
+      .returning();
+    studentRecord = updatedStudent;
   } else {
     // Create new student
-    await db.insert(student).values({
+    const [newStudent] = await db.insert(student).values({
       id: crypto.randomUUID(),
-      parentId: (await db.query.parentProfile.findFirst({
-        where: eq(parentProfile.id, parentProfileId)
-      }))!.userId,
+      parentId: parentProfileRecord.userId,
       ...studentData,
       createdAt: new Date(),
+    }).returning();
+    studentRecord = newStudent;
+  }
+
+  // Create or find fee structure for this institution and academic year
+  let feeStructureRecord = await db.query.feeStructure.findFirst({
+    where: eq(feeStructure.institutionId, institutionRecord.id),
+  });
+
+  if (!feeStructureRecord) {
+    // Create a default fee structure
+    const [newFeeStructure] = await db.insert(feeStructure).values({
+      id: crypto.randomUUID(),
+      institutionId: institutionRecord.id,
+      name: "Annual Tuition Fee",
+      description: "Annual academic fee",
+      amount: parseFloat(annualFeeAmount).toFixed(2),
+      academicYear: academicYear,
+      createdAt: new Date(),
+    }).returning();
+    feeStructureRecord = newFeeStructure;
+  }
+
+  // Check if fee application already exists for this student
+  const existingApplication = await db.query.feeApplication.findFirst({
+    where: eq(feeApplication.studentId, studentRecord.id),
+  });
+
+  if (!existingApplication) {
+    // Create fee application immediately
+    await db.insert(feeApplication).values({
+      id: crypto.randomUUID(),
+      studentId: studentRecord.id,
+      feeStructureId: feeStructureRecord.id,
+      emiPlanId: null, // Will be set in step 2
+      status: "platform_review",
+      totalAmount: parseFloat(annualFeeAmount).toFixed(2),
+      remainingAmount: parseFloat(annualFeeAmount).toFixed(2),
+      appliedAt: new Date(),
+      createdAt: new Date(),
     });
+  } else {
+    // Update existing application
+    await db.update(feeApplication)
+      .set({
+        feeStructureId: feeStructureRecord.id,
+        totalAmount: parseFloat(annualFeeAmount).toFixed(2),
+        remainingAmount: parseFloat(annualFeeAmount).toFixed(2),
+        updatedAt: new Date(),
+      })
+      .where(eq(feeApplication.id, existingApplication.id));
   }
 }
 
 async function handleStep2(parentProfileId: string, data: any) {
-  // EMI plan selection - we'll store this in a metadata field for now
-  await db.update(parentProfile)
+  // Get parent user ID
+  const parentProfileRecord = await db.query.parentProfile.findFirst({
+    where: eq(parentProfile.id, parentProfileId)
+  });
+
+  if (!parentProfileRecord) {
+    throw new Error("Parent profile not found");
+  }
+
+  // Find the student's fee application
+  const studentRecord = await db.query.student.findFirst({
+    where: eq(student.parentId, parentProfileRecord.userId),
+  });
+
+  if (!studentRecord) {
+    throw new Error("Student record not found");
+  }
+
+  const applicationRecord = await db.query.feeApplication.findFirst({
+    where: eq(feeApplication.studentId, studentRecord.id),
+  });
+
+  if (!applicationRecord) {
+    throw new Error("Fee application not found");
+  }
+
+  // Update the fee application with EMI plan selection
+  const { emiPlanId, monthlyInstallment } = data;
+
+  await db.update(feeApplication)
     .set({
-      // Store EMI selection in metadata for now
-      // We'll create proper EMI application records in the final step
+      emiPlanId: emiPlanId || null,
+      monthlyInstallment: monthlyInstallment ? parseFloat(monthlyInstallment).toFixed(2) : null,
       updatedAt: new Date(),
     })
-    .where(eq(parentProfile.id, parentProfileId));
+    .where(eq(feeApplication.id, applicationRecord.id));
 }
 
 async function handleStep3(parentProfileId: string, data: any) {

@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic rendering to avoid build issues with auth client
+export const dynamic = 'force-dynamic';
+
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";

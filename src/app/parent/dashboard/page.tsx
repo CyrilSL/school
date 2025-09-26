@@ -4,39 +4,24 @@ import { headers } from "next/headers";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Progress } from "~/components/ui/progress";
-
-interface Student {
-  id: string;
-  name: string;
-  rollNumber: string;
-  class: string;
-  section: string;
-  institution: string;
-}
-
-interface FeeStructure {
-  id: string;
-  name: string;
-  amount: number;
-  dueDate: string;
-  academicYear: string;
-}
-
-interface EmiPlan {
-  id: string;
-  name: string;
-  installments: number;
-  monthlyAmount: number;
-  interestRate: number;
-}
 
 interface FeeApplication {
   id: string;
-  feeStructure: FeeStructure;
-  emiPlan: EmiPlan;
-  status: "pending" | "approved" | "rejected";
-  appliedAt: string;
+  institution: string;
+  academicYear: string;
+  studentName: string;
+  totalFees: number;
+  status: string;
+  statusText: string;
+  actionText: string;
+  actionUrl: string;
+  appliedAt?: string;
+  emiPlan?: {
+    name: string;
+    installments: number;
+    monthlyAmount: number;
+    interestRate: number;
+  } | null;
 }
 
 export default async function ParentDashboard() {
@@ -47,69 +32,35 @@ export default async function ParentDashboard() {
     redirect("/login/parent");
   }
 
-  // For now, let the dashboard load and handle onboarding check client-side
-  // The server-side check was causing 401 errors
-  // TODO: Implement proper server-side onboarding check later
-
-  // Fetch real data from API
-  let students: Student[] = [];
-  let availableFees: FeeStructure[] = [];
-  let emiPlans: EmiPlan[] = [];
+  // Fetch real applications from API
   let applications: FeeApplication[] = [];
-  let onboardingProgress = null;
+  let isOnboardingCompleted = false;
 
   try {
-    // Get onboarding progress to show submitted forms
     const headersList = await headers();
     const host = headersList.get('host') || 'localhost:3000';
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const cookie = headersList.get('cookie') || '';
 
-    const progressResponse = await fetch(`${protocol}://${host}/api/parent/apply/partial`, {
+    const applicationsResponse = await fetch(`${protocol}://${host}/api/parent/applications`, {
       headers: {
         'Cookie': cookie,
       },
     });
 
-    if (progressResponse.ok) {
-      onboardingProgress = await progressResponse.json();
+    if (applicationsResponse.ok) {
+      const data = await applicationsResponse.json();
+      applications = data.applications || [];
+      isOnboardingCompleted = data.isOnboardingCompleted || false;
     }
   } catch (error) {
-    console.error('Error fetching onboarding progress:', error);
+    console.error('Error fetching applications:', error);
   }
 
-
-  // Mock application data - replace with real data from API
-  const mockApplications = [
-    {
-      id: "1496252",
-      institution: "IISC Bangalore(J)",
-      academicYear: "2024-2025",
-      studentName: "Cyril Samuel",
-      totalFees: 123000,
-      status: "emi_pending",
-      statusText: onboardingProgress?.isCompleted
-        ? "Please complete your EMI form"
-        : "Please complete your EMI form",
-      actionText: "Complete now",
-      actionUrl: onboardingProgress?.isCompleted
-        ? "/parent/dashboard/applications/1496252"
-        : `/parent/apply/steps/${onboardingProgress?.nextStep || 1}`
-    },
-    {
-      id: "1474706",
-      institution: "Chinmaya Vishwavidyapeeth",
-      academicYear: "2025-2026",
-      studentName: "Cyril Samuel",
-      totalFees: 100000,
-      status: "emi_progress",
-      statusText: "Your EMI registration is in progress",
-      actionText: "View Details",
-      actionUrl: onboardingProgress?.isCompleted
-        ? "/parent/dashboard/applications/1474706"
-        : `/parent/apply/steps/${onboardingProgress?.nextStep || 1}`
-    }
-  ];
+  // If no applications exist, redirect to onboarding
+  if (applications.length === 0) {
+    redirect("/parent/apply");
+  }
 
   return (
     <div className="w-full">
@@ -127,7 +78,7 @@ export default async function ParentDashboard() {
 
       {/* Application Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {mockApplications.map((application) => (
+        {applications.map((application) => (
           <Card key={application.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
@@ -136,10 +87,20 @@ export default async function ParentDashboard() {
                   <CardTitle className="text-lg leading-tight">{application.institution}</CardTitle>
                 </div>
                 <Badge
-                  variant={application.status === "emi_pending" ? "destructive" : "secondary"}
+                  variant={
+                    application.status === "emi_pending" || application.status === "onboarding_pending"
+                      ? "destructive"
+                      : application.status === "completed"
+                      ? "default"
+                      : "secondary"
+                  }
                   className="ml-2"
                 >
-                  {application.status === "emi_pending" ? "Action Required" : "In Progress"}
+                  {application.status === "emi_pending" || application.status === "onboarding_pending"
+                    ? "Action Required"
+                    : application.status === "completed"
+                    ? "Completed"
+                    : "In Progress"}
                 </Badge>
               </div>
             </CardHeader>
@@ -175,8 +136,10 @@ export default async function ParentDashboard() {
               <Button
                 asChild
                 className={`w-full text-white ${
-                  application.status === "emi_pending"
+                  application.status === "emi_pending" || application.status === "onboarding_pending"
                     ? "bg-orange-600 hover:bg-orange-700"
+                    : application.status === "completed"
+                    ? "bg-green-600 hover:bg-green-700"
                     : "bg-blue-600 hover:bg-blue-700"
                 }`}
               >
@@ -188,7 +151,7 @@ export default async function ParentDashboard() {
       </div>
 
       {/* If no applications */}
-      {mockApplications.length === 0 && (
+      {applications.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-500 mb-4">No applications found</div>
           <Button asChild>

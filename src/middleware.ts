@@ -3,9 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { env } from "~/env";
 import type { Session } from "~/server/auth";
 
-const authRoutes = ["/signup", "/signup/parent", "/signup/institution", "/login/parent", "/login/institution"];
+const authRoutes = ["/signup", "/signup/parent", "/signup/institution", "/login/parent", "/login/institution", "/admin/signin"];
 const passwordRoutes = ["/reset-password", "/forgot-password"];
-const adminRoutes = ["/admin"];
+const protectedAdminRoutes = ["/admin/dashboard"];
 // const noAuthRoutes = ["/test"];
 
 export default async function authMiddleware(request: NextRequest) {
@@ -13,7 +13,8 @@ export default async function authMiddleware(request: NextRequest) {
 
   const isAuthRoute = authRoutes.includes(pathName);
   const isPasswordRoute = passwordRoutes.includes(pathName);
-  const isAdminRoute = adminRoutes.includes(pathName);
+  const isProtectedAdminRoute = protectedAdminRoutes.includes(pathName);
+  const isAdminBaseRoute = pathName === "/admin";
   // const isOnlyProtectedRoutes = onlyProtectedRoutes.includes(pathName);
   // const isNoAuthRoute = noAuthRoutes.includes(pathName);
 
@@ -32,20 +33,32 @@ export default async function authMiddleware(request: NextRequest) {
     },
   );
 
-
   if (!session) {
+    // Allow access to auth routes, password routes
     if (isAuthRoute || isPasswordRoute) {
       return NextResponse.next();
+    }
+
+    // For /admin base route, let the page component handle redirect to /admin/signin
+    if (isAdminBaseRoute) {
+      return NextResponse.next();
+    }
+
+    // Block access to protected admin routes
+    if (isProtectedAdminRoute) {
+      return NextResponse.redirect(new URL("/admin/signin", request.url));
     }
 
     return NextResponse.redirect(new URL("/", request.url));
   }
 
+  // If logged in, redirect away from auth/password routes
   if (isAuthRoute || isPasswordRoute) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  if (isAdminRoute && session.user.role !== "admin") {
+  // Check admin access for protected admin routes and base admin route
+  if ((isProtectedAdminRoute || isAdminBaseRoute) && session.user.role !== "admin") {
     return NextResponse.redirect(new URL("/", request.url));
   }
 

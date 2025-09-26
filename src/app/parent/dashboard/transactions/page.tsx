@@ -1,7 +1,18 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
+import { headers } from "next/headers";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+
+interface Transaction {
+  id: string;
+  applicationId: string;
+  amount: number;
+  status: string;
+  date: string;
+  description: string;
+  paymentMethod: string;
+}
 
 export default async function TransactionHistory() {
   const session = await getServerSession();
@@ -10,53 +21,36 @@ export default async function TransactionHistory() {
     redirect("/login/parent");
   }
 
-  // Mock transaction data - replace with real data from API
-  const mockTransactions = [
-    {
-      id: "TXN001",
-      applicationId: "1496252",
-      amount: 20500,
-      status: "completed",
-      date: "2024-09-15",
-      description: "EMI Payment 1/6 - IISC Bangalore(J)",
-      paymentMethod: "UPI"
-    },
-    {
-      id: "TXN002",
-      applicationId: "1474706",
-      amount: 25000,
-      status: "completed",
-      date: "2024-09-10",
-      description: "Registration Fee - Chinmaya Vishwavidyapeeth",
-      paymentMethod: "Net Banking"
-    },
-    {
-      id: "TXN003",
-      applicationId: "1496252",
-      amount: 20500,
-      status: "pending",
-      date: "2024-10-15",
-      description: "EMI Payment 2/6 - IISC Bangalore(J)",
-      paymentMethod: "Auto Debit"
-    },
-    {
-      id: "TXN004",
-      applicationId: "1474706",
-      amount: 16666,
-      status: "failed",
-      date: "2024-09-05",
-      description: "EMI Payment 1/6 - Chinmaya Vishwavidyapeeth",
-      paymentMethod: "Credit Card"
+  // Fetch real transactions from API
+  let transactions: Transaction[] = [];
+
+  try {
+    const headersList = await headers();
+    const host = headersList.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const cookie = headersList.get('cookie') || '';
+
+    const transactionsResponse = await fetch(`${protocol}://${host}/api/parent/transactions`, {
+      headers: {
+        'Cookie': cookie,
+      },
+    });
+
+    if (transactionsResponse.ok) {
+      const data = await transactionsResponse.json();
+      transactions = data.transactions || [];
     }
-  ];
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed":
+      case "paid":
         return "bg-green-100 text-green-800";
       case "pending":
         return "bg-yellow-100 text-yellow-800";
-      case "failed":
+      case "overdue":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -72,7 +66,7 @@ export default async function TransactionHistory() {
 
       {/* Transaction Cards */}
       <div className="space-y-4">
-        {mockTransactions.map((transaction) => (
+        {transactions.map((transaction) => (
           <Card key={transaction.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -113,7 +107,7 @@ export default async function TransactionHistory() {
                   <div className="text-2xl font-bold text-gray-900">
                     ₹{transaction.amount.toLocaleString()}
                   </div>
-                  {transaction.status === "failed" && (
+                  {transaction.status === "overdue" && (
                     <button className="mt-2 text-sm text-blue-600 hover:text-blue-800">
                       Retry Payment
                     </button>
@@ -131,7 +125,7 @@ export default async function TransactionHistory() {
       </div>
 
       {/* If no transactions */}
-      {mockTransactions.length === 0 && (
+      {transactions.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-500 mb-4">No transactions found</div>
           <p className="text-sm text-gray-400">

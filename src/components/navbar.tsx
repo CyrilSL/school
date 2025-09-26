@@ -3,6 +3,13 @@ import Image from "next/image";
 import { Button } from "~/components/ui/button";
 import { getServerSession } from "~/server/auth";
 import SignoutButton from "~/components/auth/signout-button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 export default async function Navbar() {
   const session = await getServerSession();
@@ -17,7 +24,6 @@ export default async function Navbar() {
               alt="MyFee Logo"
               width={32}
               height={32}
-              className="h-8 w-8"
             />
             <div className="text-2xl font-bold text-blue-600">
               MyFee
@@ -50,21 +56,36 @@ export default async function Navbar() {
           <div className="flex items-center space-x-3">
             {!session ? (
               <>
-                <Link href="/login/parent">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-medium"
-                  >
-                    Parent Login
-                  </Button>
-                </Link>
-                <Link href="/login/institution">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-300 text-gray-700 hover:border-blue-600 hover:text-blue-600 font-medium"
+                    >
+                      Login
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-white">
+                    <DropdownMenuItem asChild>
+                      <Link href="/login/parent" className="w-full cursor-pointer">
+                        <span className="font-medium">Parent Login</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/login/institution" className="w-full cursor-pointer">
+                        <span className="font-medium">Institution Login</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Link href="/signup/parent">
                   <Button
                     size="sm"
                     className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
                   >
-                    Institution Login
+                    Sign Up
                   </Button>
                 </Link>
               </>

@@ -1,23 +1,42 @@
 "use client";
 
-// Force dynamic rendering to avoid build issues with auth client
 export const dynamic = 'force-dynamic';
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { authClient } from "~/server/auth/client";
 
-export default function ParentLogin() {
+export default function AdminSignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(true);
   const router = useRouter();
+
+  // Check if already authenticated as admin
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await authClient.getSession();
+        if (session.data?.user?.role === "admin") {
+          router.push("/admin/dashboard");
+          return;
+        }
+      } catch (err) {
+        // Not authenticated, continue to login
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +52,14 @@ export default function ParentLogin() {
       if (result.error) {
         setError(result.error.message || "Login failed");
       } else {
-        router.push("/parent/dashboard");
+        // Check if user is admin after login
+        const session = await authClient.getSession();
+        if (session.data?.user?.role === "admin") {
+          router.push("/admin/dashboard");
+        } else {
+          setError("Access denied. Admin privileges required.");
+          await authClient.signOut();
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -42,15 +68,27 @@ export default function ParentLogin() {
     }
   };
 
-  const fillDemoCredentials = () => {
-    setEmail("parent@example.com");
-    setPassword("parent123");
+  const fillAdminCredentials = () => {
+    setEmail("admin@myfee.com");
+    setPassword("admin123");
   };
 
+  // Show loading while checking authentication
+  if (checking) {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-white">
-      {/* Simple top bar for consistency with homepage */}
-      <div className="bg-white/95 border-b border-gray-200 shadow-sm">
+    <main className="min-h-screen bg-gray-50">
+      {/* Simple top bar */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 h-16 flex items-center">
           <Link href="/" className="flex items-center space-x-2">
             <Image
@@ -69,34 +107,12 @@ export default function ParentLogin() {
         <div className="mx-auto w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Parent Login</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Admin Sign In</h2>
             <p className="text-gray-600 text-sm">
-              Access your dashboard to manage your child&apos;s educational fees
+              Access the administrative dashboard
             </p>
           </div>
 
-          {/* Demo Credentials Card */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center space-x-3 mb-3">
-              <Image
-                src="/logo.png"
-                alt="MyFee Logo"
-                width={24}
-                height={24}
-                className="h-6 w-6"
-              />
-              <h3 className="text-blue-700 font-medium">Use Demo Credentials for both logins</h3>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={fillDemoCredentials}
-              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
-            >
-              Use Demo Credentials
-            </Button>
-          </div>
 
           {/* Login Form */}
           <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
@@ -109,7 +125,7 @@ export default function ParentLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="mt-1"
-                  placeholder="Enter your email"
+                  placeholder="Enter admin email"
                   required
                 />
               </div>
@@ -122,7 +138,7 @@ export default function ParentLogin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="mt-1"
-                  placeholder="Enter your password"
+                  placeholder="Enter admin password"
                   required
                 />
               </div>
@@ -136,17 +152,21 @@ export default function ParentLogin() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
               >
-                {loading ? "Signing in..." : "Sign in as Parent"}
+                {loading ? "Signing in..." : "Sign in as Admin"}
               </Button>
             </form>
 
             <div className="mt-4 text-center">
               <p className="text-gray-600 text-sm">
-                Institution admin?{" "}
+                Not an admin?{" "}
+                <Link href="/login/parent" className="text-blue-600 hover:text-blue-700">
+                  Parent Login
+                </Link>
+                {" | "}
                 <Link href="/login/institution" className="text-blue-600 hover:text-blue-700">
-                  Login here
+                  Institution Login
                 </Link>
               </p>
             </div>

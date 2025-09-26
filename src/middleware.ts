@@ -5,7 +5,7 @@ import type { Session } from "~/server/auth";
 
 const authRoutes = ["/signup", "/signup/parent", "/signup/institution", "/login/parent", "/login/institution", "/admin/signin"];
 const passwordRoutes = ["/reset-password", "/forgot-password"];
-const protectedAdminRoutes = ["/admin/dashboard"];
+const protectedAdminRoutes = ["/admin/dashboard", "/admin/institutions"];
 // const noAuthRoutes = ["/test"];
 
 export default async function authMiddleware(request: NextRequest) {
@@ -13,7 +13,7 @@ export default async function authMiddleware(request: NextRequest) {
 
   const isAuthRoute = authRoutes.includes(pathName);
   const isPasswordRoute = passwordRoutes.includes(pathName);
-  const isProtectedAdminRoute = protectedAdminRoutes.includes(pathName);
+  const isProtectedAdminRoute = protectedAdminRoutes.some(route => pathName.startsWith(route));
   const isAdminBaseRoute = pathName === "/admin";
   // const isOnlyProtectedRoutes = onlyProtectedRoutes.includes(pathName);
   // const isNoAuthRoute = noAuthRoutes.includes(pathName);

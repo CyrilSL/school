@@ -91,8 +91,8 @@ export default async function Navbar() {
               </>
             ) : (
               <Link href={
-                session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin")
-                  ? "/institution/dashboard"
+                session.user?.role === "admin"
+                  ? "/admin/dashboard"
                   : "/parent/dashboard"
               }>
                 <Button
@@ -110,8 +110,8 @@ export default async function Navbar() {
             {/* Show Dashboard button for mobile too if authenticated */}
             {session && (
               <Link href={
-                session.user?.email === "admin@school.edu" || session.user?.email?.includes("admin")
-                  ? "/institution/dashboard"
+                session.user?.role === "admin"
+                  ? "/admin/dashboard"
                   : "/parent/dashboard"
               }>
                 <Button

@@ -149,12 +149,16 @@ export const institution = createTable("institution", {
     .notNull()
     .references(() => organization.id),
   name: text("name").notNull(),
-  type: text("type").notNull(), // 'school' | 'college'
+  type: text("type").notNull(), // 'school' | 'college' | 'university'
+  city: text("city").notNull(),
+  state: text("state"),
+  board: text("board"), // 'CBSE' | 'ICSE' | 'State Board' | 'IB' | 'University'
   address: text("address"),
   phone: text("phone"),
   email: text("email"),
   website: text("website"),
   logo: text("logo"),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
     () => new Date(),

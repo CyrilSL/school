@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "~/server/auth";
 import { db } from "~/server/db";
-import { institution, organization } from "~/server/db/schema";
-import { nanoid } from "nanoid";
+import { institution } from "~/server/db/schema";
+import { eq } from "drizzle-orm";
 
-export async function POST(request: NextRequest) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     // Check if user is authenticated and is admin
     const sessionData = await getServerSession();
@@ -48,14 +51,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create organization first (required by schema)
-    const organizationId = nanoid();
-    await db.insert(organization).values({
-      id: organizationId,
-      name: name,
-      slug: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-      createdAt: new Date(),
-    });
+    // Check if institution exists
+    const existingInstitution = await db.select().from(institution).where(eq(institution.id, params.id));
+
+    if (existingInstitution.length === 0) {
+      return NextResponse.json(
+        { error: "Institution not found" },
+        { status: 404 }
+      );
+    }
 
     // Prepare location and board data
     let finalLocations = [];
@@ -70,11 +74,8 @@ export async function POST(request: NextRequest) {
       finalBoards = [board];
     }
 
-    // Create institution
-    const institutionId = nanoid();
-    const institutionData: any = {
-      id: institutionId,
-      organizationId: organizationId,
+    // Prepare update data
+    const updateData: any = {
       name: name,
       type: type,
       city: city || finalLocations[0]?.city,
@@ -85,35 +86,42 @@ export async function POST(request: NextRequest) {
       email: email || null,
       website: website || null,
       isActive: isActive !== undefined ? isActive : true,
-      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    // Add new format fields if available (try to add them, but don't fail if columns don't exist yet)
+    // Add new format fields if available
     try {
-      institutionData.locations = finalLocations;
-      institutionData.boards = finalBoards;
+      updateData.locations = finalLocations;
+      updateData.boards = finalBoards;
     } catch (error) {
       console.log("New columns not available yet, using legacy format");
     }
 
-    const newInstitution = await db.insert(institution).values(institutionData).returning();
+    // Update institution
+    const updatedInstitution = await db.update(institution)
+      .set(updateData)
+      .where(eq(institution.id, params.id))
+      .returning();
 
     return NextResponse.json({
       success: true,
-      institution: newInstitution[0],
-      message: "Institution created successfully"
+      institution: updatedInstitution[0],
+      message: "Institution updated successfully"
     });
 
   } catch (error) {
-    console.error("Error creating institution:", error);
+    console.error("Error updating institution:", error);
     return NextResponse.json(
-      { error: "Failed to create institution" },
+      { error: "Failed to update institution" },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     // Check if user is authenticated and is admin
     const sessionData = await getServerSession();
@@ -126,18 +134,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 });
     }
 
-    // Get all institutions
-    const institutions = await db.select().from(institution).orderBy(institution.createdAt);
+    // Check if institution exists
+    const existingInstitution = await db.select().from(institution).where(eq(institution.id, params.id));
+
+    if (existingInstitution.length === 0) {
+      return NextResponse.json(
+        { error: "Institution not found" },
+        { status: 404 }
+      );
+    }
+
+    // Delete institution
+    await db.delete(institution).where(eq(institution.id, params.id));
 
     return NextResponse.json({
       success: true,
-      institutions: institutions
+      message: "Institution deleted successfully"
     });
 
   } catch (error) {
-    console.error("Error fetching institutions:", error);
+    console.error("Error deleting institution:", error);
     return NextResponse.json(
-      { error: "Failed to fetch institutions" },
+      { error: "Failed to delete institution" },
       { status: 500 }
     );
   }

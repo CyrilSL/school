@@ -7,10 +7,30 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { useToast } from "~/hooks/use-toast";
-import { Loader2, Search, MapPin, BookOpen, Calendar, User, DollarSign } from "lucide-react";
+import { Loader2, Search, MapPin, BookOpen, Calendar, User, DollarSign, ChevronDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "~/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+
+interface Institution {
+  name: string;
+  type: string;
+  campusCount: number;
+  cities: string[];
+  boards: string[];
+}
+
+interface InstitutionLocation {
+  id: string;
+  city: string;
+  state: string | null;
+  location: string;
+  board: string | null;
+  type: string;
+}
 
 interface StudentInstitutionData {
   institutionName: string;
+  institutionId: string;
   location: string;
   board: string;
   academicYear: string;
@@ -27,6 +47,7 @@ export default function StudentInstitutionForm() {
   const { toast } = useToast();
   const [formData, setFormData] = useState<StudentInstitutionData>({
     institutionName: "",
+    institutionId: "",
     location: "",
     board: "",
     academicYear: "",
@@ -42,12 +63,52 @@ export default function StudentInstitutionForm() {
   const [isFormValid, setIsFormValid] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Institution cascading data
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [institutionLocations, setInstitutionLocations] = useState<InstitutionLocation[]>([]);
+  const [availableBoards, setAvailableBoards] = useState<string[]>([]);
+
+  // UI states
+  const [institutionSearch, setInstitutionSearch] = useState("");
+  const [institutionOpen, setInstitutionOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
+  const [filteredInstitutions, setFilteredInstitutions] = useState<Institution[]>([]);
+
+  // Fetch institutions on component mount
   useEffect(() => {
+    const fetchInstitutions = async () => {
+      try {
+        const response = await fetch('/api/institutions');
+        if (response.ok) {
+          const data = await response.json();
+          setInstitutions(data.institutions);
+          setFilteredInstitutions(data.institutions);
+        }
+      } catch (error) {
+        console.error('Error fetching institutions:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load institutions. Please refresh the page.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchInstitutions();
+
     // Load saved data
     const savedData = localStorage.getItem('onboarding-student-institution');
     if (savedData) {
       const parsed = JSON.parse(savedData);
       setFormData(parsed);
+      setInstitutionSearch(parsed.institutionName || "");
+
+      // If institution was selected, load its locations
+      if (parsed.institutionName) {
+        fetchInstitutionLocations(parsed.institutionName);
+      }
+
       // Show student form if institution details are already filled
       if (parsed.institutionName && parsed.academicYear) {
         setShowStudentForm(true);
@@ -60,9 +121,53 @@ export default function StudentInstitutionForm() {
     setLoading(false);
   }, []);
 
+  // Fetch locations and boards for selected institution
+  const fetchInstitutionLocations = async (institutionName: string) => {
+    try {
+      const response = await fetch(`/api/institutions?institutionName=${encodeURIComponent(institutionName)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setInstitutionLocations(data.locations);
+        setAvailableBoards(data.boards);
+      }
+    } catch (error) {
+      console.error('Error fetching institution locations:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load institution locations.",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     setIsFormValid(validateForm());
-  }, [formData]);
+
+    // Auto-expand student form when all institution details are filled
+    const institutionComplete = formData.institutionName &&
+                               formData.location &&
+                               formData.board &&
+                               formData.academicYear;
+
+    if (institutionComplete && !showStudentForm) {
+      setShowStudentForm(true);
+    }
+  }, [formData, showStudentForm]);
+
+  // Filter institutions based on search
+  useEffect(() => {
+    if (!institutionSearch) {
+      setFilteredInstitutions(institutions);
+      return;
+    }
+
+    const filtered = institutions.filter(institution =>
+      institution.name.toLowerCase().includes(institutionSearch.toLowerCase()) ||
+      institution.city.toLowerCase().includes(institutionSearch.toLowerCase()) ||
+      (institution.board && institution.board.toLowerCase().includes(institutionSearch.toLowerCase()))
+    );
+    setFilteredInstitutions(filtered);
+  }, [institutionSearch, institutions]);
 
   const handleInputChange = (field: keyof StudentInstitutionData, value: string) => {
     setFormData(prev => ({
@@ -71,25 +176,84 @@ export default function StudentInstitutionForm() {
     }));
   };
 
+  const handleInstitutionSelect = (institution: Institution) => {
+    setFormData(prev => ({
+      ...prev,
+      institutionName: institution.name,
+      institutionId: "", // Reset since location not selected yet
+      location: "", // Reset location
+      board: "", // Reset board
+    }));
+    setInstitutionSearch(institution.name);
+    setInstitutionOpen(false);
+
+    // Clear location and board data
+    setInstitutionLocations([]);
+    setAvailableBoards([]);
+
+    // Fetch locations for this institution
+    fetchInstitutionLocations(institution.name);
+  };
+
+  const handleLocationSelect = (location: InstitutionLocation) => {
+    setFormData(prev => ({
+      ...prev,
+      institutionId: location.id,
+      location: location.location,
+      board: location.board || "",
+    }));
+    setLocationOpen(false);
+  };
+
+  const handleBoardSelect = (board: string) => {
+    setFormData(prev => ({
+      ...prev,
+      board: board,
+    }));
+    setBoardOpen(false);
+  };
+
   const saveProgress = () => {
     localStorage.setItem('onboarding-student-institution', JSON.stringify(formData));
   };
 
   const validateInstitutionForm = () => {
-    const requiredFields: (keyof StudentInstitutionData)[] = [
-      "institutionName", "academicYear"
-    ];
-    
-    for (const field of requiredFields) {
-      if (!formData[field].trim()) {
-        toast({
-          title: "Missing required field",
-          description: `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
-          variant: "destructive"
-        });
-        return false;
-      }
+    if (!formData.institutionName.trim()) {
+      toast({
+        title: "Missing required field",
+        description: "Please select an institution",
+        variant: "destructive"
+      });
+      return false;
     }
+
+    if (!formData.location.trim()) {
+      toast({
+        title: "Missing required field",
+        description: "Please select a location",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.board.trim()) {
+      toast({
+        title: "Missing required field",
+        description: "Please select a board",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.academicYear.trim()) {
+      toast({
+        title: "Missing required field",
+        description: "Please select an academic year",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -101,11 +265,17 @@ export default function StudentInstitutionForm() {
   };
 
   const validateForm = () => {
+    // Check institution selection
+    if (!formData.institutionId || !formData.institutionName.trim()) {
+      return false;
+    }
+
+    // Check other required fields
     const requiredFields: (keyof StudentInstitutionData)[] = [
-      "institutionName", "academicYear", "studentFirstName", "studentLastName", 
+      "academicYear", "studentFirstName", "studentLastName",
       "admissionType", "classStream", "annualFeeAmount"
     ];
-    
+
     for (const field of requiredFields) {
       const value = formData[field].trim();
       if (!value) {
@@ -131,6 +301,7 @@ export default function StudentInstitutionForm() {
         body: JSON.stringify({
           step: 1,
           data: {
+            institutionId: formData.institutionId,
             institutionName: formData.institutionName,
             location: formData.location,
             board: formData.board,
@@ -212,50 +383,133 @@ export default function StudentInstitutionForm() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="institutionName">Search for School / College / University</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="institutionName"
-                    value={formData.institutionName}
-                    onChange={(e) => handleInputChange("institutionName", e.target.value)}
-                    placeholder="Enter institution name"
-                    className="pl-10 h-12"
-                  />
-                </div>
+                <Label>Search for School / College / University</Label>
+                <Popover open={institutionOpen} onOpenChange={setInstitutionOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={institutionOpen}
+                      className="h-12 w-full justify-between pl-10 text-left font-normal"
+                    >
+                      <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+                      {formData.institutionName || "Select institution..."}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0 bg-white border border-gray-200 shadow-lg">
+                    <Command className="bg-white">
+                      <CommandInput
+                        placeholder="Search institutions..."
+                        value={institutionSearch}
+                        onValueChange={setInstitutionSearch}
+                        className="bg-white"
+                      />
+                      <CommandList className="bg-white">
+                        <CommandEmpty className="bg-white">No institutions found.</CommandEmpty>
+                        <CommandGroup className="bg-white">
+                          {filteredInstitutions.map((institution) => (
+                            <CommandItem
+                              key={institution.name}
+                              value={institution.name}
+                              onSelect={() => handleInstitutionSelect(institution)}
+                              className="bg-white hover:bg-gray-50"
+                            >
+                              <div className="flex flex-col">
+                                <div className="font-medium">{institution.name}</div>
+                                <div className="text-sm text-gray-500">
+                                  {institution.type} • {institution.campusCount} campus{institution.campusCount > 1 ? 'es' : ''}
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Select Location</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => handleInputChange("location", e.target.value)}
-                    placeholder="City, State"
-                    className="pl-10 h-12"
-                  />
-                </div>
+                <Label>Select Location</Label>
+                <Popover open={locationOpen} onOpenChange={setLocationOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={locationOpen}
+                      disabled={!formData.institutionName || institutionLocations.length === 0}
+                      className="h-12 w-full justify-between pl-10 text-left font-normal disabled:opacity-50"
+                    >
+                      <MapPin className="absolute left-3 h-4 w-4 text-gray-400" />
+                      {formData.location || "Select location..."}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0 bg-white border border-gray-200 shadow-lg">
+                    <Command className="bg-white">
+                      <CommandInput placeholder="Search locations..." className="bg-white" />
+                      <CommandList className="bg-white">
+                        <CommandEmpty className="bg-white">No locations found.</CommandEmpty>
+                        <CommandGroup className="bg-white">
+                          {institutionLocations.map((location) => (
+                            <CommandItem
+                              key={location.id}
+                              value={location.location}
+                              onSelect={() => handleLocationSelect(location)}
+                              className="bg-white hover:bg-gray-50"
+                            >
+                              <div className="flex flex-col">
+                                <div className="font-medium">{location.location}</div>
+                                <div className="text-sm text-gray-500">
+                                  {location.board} • {location.type}
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="board">Select Board / Class / Stream</Label>
-                <div className="relative">
-                  <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
-                  <Select value={formData.board} onValueChange={(value) => handleInputChange("board", value)}>
-                    <SelectTrigger className="h-12 pl-10">
-                      <SelectValue placeholder="Select Board" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="CBSE">CBSE</SelectItem>
-                      <SelectItem value="ICSE">ICSE</SelectItem>
-                      <SelectItem value="State Board">State Board</SelectItem>
-                      <SelectItem value="IB">IB</SelectItem>
-                      <SelectItem value="University">University</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Label>Select Board / Stream</Label>
+                <Popover open={boardOpen} onOpenChange={setBoardOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={boardOpen}
+                      disabled={!formData.location || availableBoards.length === 0}
+                      className="h-12 w-full justify-between pl-10 text-left font-normal disabled:opacity-50"
+                    >
+                      <BookOpen className="absolute left-3 h-4 w-4 text-gray-400" />
+                      {formData.board || "Select board..."}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0 bg-white border border-gray-200 shadow-lg">
+                    <Command className="bg-white">
+                      <CommandList className="bg-white">
+                        <CommandEmpty className="bg-white">No boards found.</CommandEmpty>
+                        <CommandGroup className="bg-white">
+                          {availableBoards.map((board) => (
+                            <CommandItem
+                              key={board}
+                              value={board}
+                              onSelect={() => handleBoardSelect(board)}
+                              className="bg-white hover:bg-gray-50"
+                            >
+                              <div className="font-medium">{board}</div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">
@@ -281,18 +535,6 @@ export default function StudentInstitutionForm() {
               </p>
             </div>
 
-            {/* Show Student Form Button - Only show if student form is not visible */}
-            {!showStudentForm && (
-              <div className="pt-6 text-center">
-                <Button
-                  onClick={handleShowStudentForm}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
-                  size="lg"
-                >
-                  Next
-                </Button>
-              </div>
-            )}
           </div>
 
           {/* Student Details - Only show when showStudentForm is true */}

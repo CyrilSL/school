@@ -11,6 +11,7 @@ import {
   timestamp,
   varchar,
   decimal,
+  json,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -142,6 +143,25 @@ export const invitation = createTable("invitation", {
     .references(() => user.id),
 });
 
+// Locations table for managing available cities/locations
+export const location = createTable("location", {
+  id: text("id").primaryKey(),
+  city: text("city").notNull(),
+  state: text("state"),
+  country: text("country").notNull().default("India"),
+  displayName: text("display_name").notNull(), // "Mumbai, Maharashtra" or "Delhi, Delhi"
+  isActive: boolean("is_active").notNull().default(true),
+  usageCount: integer("usage_count").notNull().default(0), // Track how often it's used
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+}, (table) => ({
+  displayNameIndex: index("location_display_name_idx").on(table.displayName),
+  cityStateIndex: index("location_city_state_idx").on(table.city, table.state),
+  usageCountIndex: index("location_usage_count_idx").on(table.usageCount),
+}));
+
 // Institution-specific tables
 export const institution = createTable("institution", {
   id: text("id").primaryKey(),
@@ -150,10 +170,16 @@ export const institution = createTable("institution", {
     .references(() => organization.id),
   name: text("name").notNull(),
   type: text("type").notNull(), // 'school' | 'college' | 'university'
-  city: text("city").notNull(),
+  // Multiple locations support
+  locations: json("locations").$type<Array<{city: string; state?: string; address?: string}>>().default([]),
+  // Legacy fields for backward compatibility
+  city: text("city"),
   state: text("state"),
-  board: text("board"), // 'CBSE' | 'ICSE' | 'State Board' | 'IB' | 'University'
   address: text("address"),
+  // Multiple boards support
+  boards: json("boards").$type<string[]>().default([]),
+  // Legacy field for backward compatibility
+  board: text("board"),
   phone: text("phone"),
   email: text("email"),
   website: text("website"),

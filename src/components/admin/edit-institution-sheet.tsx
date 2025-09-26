@@ -1,26 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "~/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "~/components/ui/sheet";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { Switch } from "~/components/ui/switch";
 import { TagInput } from "~/components/ui/tag-input";
 import { LocationTagInput } from "~/components/ui/location-tag-input";
 import AddLocationLite from "./add-location-lite";
-import { Save, Building, MapPin, GraduationCap, Plus } from "lucide-react";
+import { Save, Building, MapPin, GraduationCap } from "lucide-react";
 import { useToast } from "~/hooks/use-toast";
 import { useRouter } from "next/navigation";
+
+interface Institution {
+  id: string;
+  name: string;
+  type: string;
+  // Legacy fields
+  city: string;
+  state: string | null;
+  board: string | null;
+  // New multi-select fields
+  locations?: Array<{city: string; state?: string; address?: string}> | string[];
+  boards?: string[];
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date | null;
+  organizationId: string;
+}
 
 interface InstitutionData {
   name: string;
   type: string;
   locations: string[]; // e.g., ["Mumbai, Maharashtra", "Delhi, Delhi"]
   boards: string[]; // e.g., ["CBSE", "ICSE"]
-  // Legacy fields for single location/board
+  // Legacy fields for backward compatibility
   city: string;
   state: string;
   board: string;
@@ -31,10 +52,15 @@ interface InstitutionData {
   isActive: boolean;
 }
 
-export default function AddInstitutionSheet() {
+interface EditInstitutionSheetProps {
+  institution: Institution | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function EditInstitutionSheet({ institution, open, onOpenChange }: EditInstitutionSheetProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<InstitutionData>({
     name: "",
@@ -51,6 +77,53 @@ export default function AddInstitutionSheet() {
     website: "",
     isActive: true,
   });
+
+  useEffect(() => {
+    if (institution) {
+      // Handle both old and new data formats
+      let locations: string[] = [];
+      let boards: string[] = [];
+
+      // Check if institution has new format data
+      if (institution.locations && Array.isArray(institution.locations)) {
+        if (typeof institution.locations[0] === 'string') {
+          // Already in string format
+          locations = institution.locations as string[];
+        } else {
+          // Convert from object format to string format
+          locations = (institution.locations as Array<{city: string; state?: string}>).map(
+            (loc) => `${loc.city}${loc.state ? ', ' + loc.state : ''}`
+          );
+        }
+      } else if (institution.city) {
+        // Fallback to legacy format
+        locations = [`${institution.city}${institution.state ? ', ' + institution.state : ''}`];
+      }
+
+      if (institution.boards && Array.isArray(institution.boards)) {
+        boards = institution.boards;
+      } else if (institution.board) {
+        // Fallback to legacy format
+        boards = [institution.board];
+      }
+
+      setFormData({
+        name: institution.name,
+        type: institution.type,
+        locations: locations,
+        boards: boards,
+        // Legacy fields
+        city: institution.city,
+        state: institution.state || "",
+        board: institution.board || "",
+        address: institution.address || "",
+        phone: institution.phone || "",
+        email: institution.email || "",
+        website: institution.website || "",
+        isActive: institution.isActive,
+      });
+    }
+  }, [institution]);
 
   const handleInputChange = (field: keyof InstitutionData, value: string) => {
     setFormData(prev => ({
@@ -81,23 +154,6 @@ export default function AddInstitutionSheet() {
         locations: [...prev.locations, displayName]
       }));
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      type: "",
-      locations: [],
-      boards: [],
-      city: "",
-      state: "",
-      board: "",
-      address: "",
-      phone: "",
-      email: "",
-      website: "",
-      isActive: true,
-    });
   };
 
   const validateForm = () => {
@@ -152,13 +208,13 @@ export default function AddInstitutionSheet() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    if (!institution || !validateForm()) return;
 
     setLoading(true);
 
     try {
-      const response = await fetch("/api/admin/institutions", {
-        method: "POST",
+      const response = await fetch(`/api/admin/institutions/${institution.id}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -173,22 +229,21 @@ export default function AddInstitutionSheet() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to create institution");
+        throw new Error(error.error || "Failed to update institution");
       }
 
       toast({
-        title: "Institution created successfully",
-        description: `${formData.name} has been added to the system`,
+        title: "Institution updated successfully",
+        description: `${formData.name} has been updated`,
       });
 
-      resetForm();
-      setOpen(false);
-      router.refresh(); // Refresh the page to show new institution
+      onOpenChange(false);
+      router.refresh();
     } catch (error) {
-      console.error("Error creating institution:", error);
+      console.error("Error updating institution:", error);
       toast({
-        title: "Error creating institution",
-        description: error instanceof Error ? error.message : "Failed to create institution",
+        title: "Error updating institution",
+        description: error instanceof Error ? error.message : "Failed to update institution",
         variant: "destructive"
       });
     } finally {
@@ -196,22 +251,18 @@ export default function AddInstitutionSheet() {
     }
   };
 
+  if (!institution) return null;
+
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Institution
-        </Button>
-      </SheetTrigger>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[600px] sm:max-w-[600px] bg-white">
         <SheetHeader>
           <SheetTitle className="flex items-center space-x-2">
             <Building className="h-5 w-5 text-blue-600" />
-            <span>Add New Institution</span>
+            <span>Edit Institution</span>
           </SheetTitle>
           <SheetDescription>
-            Create a new educational institution that parents can apply to
+            Update the information for {institution.name}
           </SheetDescription>
         </SheetHeader>
 
@@ -367,7 +418,7 @@ export default function AddInstitutionSheet() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={() => onOpenChange(false)}
               >
                 Cancel
               </Button>
@@ -379,12 +430,12 @@ export default function AddInstitutionSheet() {
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Creating...
+                    Updating...
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Create Institution
+                    Update Institution
                   </>
                 )}
               </Button>

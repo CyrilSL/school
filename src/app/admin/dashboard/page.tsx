@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "~/server/auth";
 import { db } from "~/server/db";
 import { institution } from "~/server/db/schema";
-import AdminDashboardClient from "~/components/admin/admin-dashboard-client";
+import TabbedAdminDashboard from "~/components/admin/tabbed-admin-dashboard";
 
 export default async function AdminDashboard() {
   const sessionData = await getServerSession();
@@ -20,5 +20,5 @@ export default async function AdminDashboard() {
   // Fetch institutions
   const institutions = await db.select().from(institution).orderBy(institution.createdAt);
 
-  return <AdminDashboardClient institutions={institutions} />;
+  return <TabbedAdminDashboard institutions={institutions} />;
 }

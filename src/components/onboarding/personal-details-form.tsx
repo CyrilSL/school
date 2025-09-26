@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -49,6 +49,7 @@ export default function PersonalDetailsForm() {
   const [loading, setLoading] = useState(true);
   const [isFormValid, setIsFormValid] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [dobPopoverOpen, setDobPopoverOpen] = useState(false);
 
   useEffect(() => {
     // Check if previous steps are completed
@@ -265,37 +266,53 @@ export default function PersonalDetailsForm() {
 
             <div className="space-y-2">
               <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-              <Popover>
+              <Popover open={dobPopoverOpen} onOpenChange={setDobPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
-                    variant={"outline"}
+                    variant="outline"
+                    id="dateOfBirth"
                     className={cn(
-                      "h-12 w-full justify-start text-left font-normal",
+                      "h-12 w-full justify-between font-normal",
                       !formData.dateOfBirth && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.dateOfBirth ? (
-                      format(new Date(formData.dateOfBirth), "PPP")
+                      new Date(formData.dateOfBirth).toLocaleDateString()
                     ) : (
-                      <span>Pick your date of birth</span>
+                      "Select date of birth"
                     )}
+                    <ChevronDownIcon className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-white" align="start">
+                <PopoverContent className="w-auto overflow-hidden p-0 bg-white" align="start">
                   <Calendar
                     mode="single"
+                    captionLayout="dropdown"
                     selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined}
                     onSelect={(date) => {
                       if (date) {
                         handleInputChange("dateOfBirth", format(date, "yyyy-MM-dd"));
+                        setDobPopoverOpen(false);
                       }
                     }}
-                    disabled={(date) =>
-                      date > new Date(new Date().setFullYear(new Date().getFullYear() - 18)) ||
-                      date < new Date("1900-01-01")
-                    }
-                    initialFocus
+                    startMonth={new Date(new Date().getFullYear() - 100, 0, 1)}
+                    endMonth={new Date(new Date().getFullYear() - 18, 11, 31)}
+                    disabled={(date) => {
+                      const today = new Date();
+
+                      // Calculate 18 years ago from today (latest valid birth date)
+                      const eighteenYearsAgo = new Date();
+                      eighteenYearsAgo.setFullYear(today.getFullYear() - 18);
+                      eighteenYearsAgo.setMonth(today.getMonth());
+                      eighteenYearsAgo.setDate(today.getDate());
+
+                      // Calculate 100 years ago (earliest reasonable birth date)
+                      const hundredYearsAgo = new Date();
+                      hundredYearsAgo.setFullYear(today.getFullYear() - 100);
+
+                      // Disable dates from 18 years ago onwards (too young) AND very old dates
+                      return date > eighteenYearsAgo || date < hundredYearsAgo;
+                    }}
                   />
                 </PopoverContent>
               </Popover>

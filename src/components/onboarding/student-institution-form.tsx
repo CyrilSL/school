@@ -247,7 +247,7 @@ export default function StudentInstitutionForm() {
                     <SelectTrigger className="h-12 pl-10">
                       <SelectValue placeholder="Select Board" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="CBSE">CBSE</SelectItem>
                       <SelectItem value="ICSE">ICSE</SelectItem>
                       <SelectItem value="State Board">State Board</SelectItem>
@@ -266,7 +266,7 @@ export default function StudentInstitutionForm() {
                     <SelectTrigger className="h-12 pl-10">
                       <SelectValue placeholder="Select Academic Year" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="2024-25">2024-25</SelectItem>
                       <SelectItem value="2025-26">2025-26</SelectItem>
                     </SelectContent>

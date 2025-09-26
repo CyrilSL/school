@@ -286,6 +286,7 @@ export default function OnboardingForm() {
                     maxLength={10}
                   />
                 </div>
+              </div>
               </CardContent>
             </Card>
 
@@ -395,6 +396,7 @@ export default function OnboardingForm() {
                     placeholder="Name of previous school/institution"
                   />
                 </div>
+              </div>
               </CardContent>
             </Card>
 

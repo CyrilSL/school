@@ -42,10 +42,10 @@ export default function ParentPanForm() {
     const studentDetailsData = localStorage.getItem('onboarding-student-details');
     const emiPlanData = localStorage.getItem('onboarding-emi-plan');
     
-    if (!studentDetailsData || !emiPlanData) {
-      toast({
     // Validation removed - allow direct access to all steps
-    }
+    // if (!studentDetailsData || !emiPlanData) {
+    //   return;
+    // }
 
     // Load saved data
     const savedData = localStorage.getItem('onboarding-parent-pan');

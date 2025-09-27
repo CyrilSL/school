@@ -67,9 +67,32 @@ export default async function authMiddleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // If logged in, redirect away from auth/password routes
+  // If logged in, redirect away from auth/password routes to appropriate dashboard
   if (isAuthRoute || isPasswordRoute) {
-    return NextResponse.redirect(new URL("/", request.url));
+    if (session.user.role === "admin") {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+    } else {
+      // Check if user has organization membership for institution dashboard
+      try {
+        const { data: activeMember } = await betterFetch(
+          "/api/auth/organization/get-active-member",
+          {
+            baseURL: env.BETTER_AUTH_URL,
+            headers: {
+              cookie: request.headers.get("cookie") ?? "",
+            },
+          },
+        );
+
+        if (activeMember) {
+          return NextResponse.redirect(new URL("/institution/dashboard", request.url));
+        }
+      } catch (error) {
+        // Fall through to parent dashboard
+      }
+
+      return NextResponse.redirect(new URL("/parent/dashboard", request.url));
+    }
   }
 
   // Check admin access for protected admin routes and base admin route

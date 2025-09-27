@@ -513,12 +513,7 @@ export default function StudentInstitutionForm() {
                                 onSelect={() => handleLocationSelect(location)}
                                 className="bg-white hover:bg-gray-50"
                               >
-                                <div className="flex flex-col">
-                                  <div className="font-medium">{location.location}</div>
-                                  <div className="text-sm text-gray-500">
-                                    {location.board} • {location.type}
-                                  </div>
-                                </div>
+                                <div className="font-medium">{location.location}</div>
                               </CommandItem>
                             ))}
                           </CommandGroup>

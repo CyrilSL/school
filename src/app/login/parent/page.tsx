@@ -42,10 +42,6 @@ export default function ParentLogin() {
     }
   };
 
-  const fillDemoCredentials = () => {
-    setEmail("parent@example.com");
-    setPassword("parent123");
-  };
 
   return (
     <main className="min-h-screen bg-white">
@@ -75,28 +71,6 @@ export default function ParentLogin() {
             </p>
           </div>
 
-          {/* Demo Credentials Card */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center space-x-3 mb-3">
-              <Image
-                src="/logo.png"
-                alt="MyFee Logo"
-                width={24}
-                height={24}
-                className="h-6 w-6"
-              />
-              <h3 className="text-blue-700 font-medium">Use Demo Credentials for both logins</h3>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={fillDemoCredentials}
-              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
-            >
-              Use Demo Credentials
-            </Button>
-          </div>
 
           {/* Login Form */}
           <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">

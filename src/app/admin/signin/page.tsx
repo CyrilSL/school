@@ -68,10 +68,6 @@ export default function AdminSignIn() {
     }
   };
 
-  const fillAdminCredentials = () => {
-    setEmail("admin@myfee.com");
-    setPassword("admin123");
-  };
 
   // Show loading while checking authentication
   if (checking) {

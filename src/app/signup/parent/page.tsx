@@ -48,11 +48,6 @@ export default function ParentSignup() {
     }
   };
 
-  const fillDemoData = () => {
-    setName("Parent User");
-    setEmail("parent@example.com");
-    setPassword("parent123");
-  };
 
   const handleVerifyNow = async () => {
     setLoading(true);
@@ -110,24 +105,6 @@ export default function ParentSignup() {
                 </p>
               </div>
 
-          {/* Demo Data Card */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h3 className="text-blue-700 font-medium mb-2">Demo Data</h3>
-            <div className="text-sm text-blue-700 space-y-1">
-              <p>Name: Parent User</p>
-              <p>Email: parent@example.com</p>
-              <p>Password: parent123</p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={fillDemoData}
-              className="mt-3 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
-            >
-              Fill Demo Data
-            </Button>
-          </div>
 
           {/* Signup Form */}
           <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">

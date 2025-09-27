@@ -406,3 +406,26 @@ export const feeStructureRelations = relations(feeStructure, ({ many }) => ({
 export const emiPlanRelations = relations(emiPlan, ({ many }) => ({
   feeApplications: many(feeApplication),
 }));
+
+export const memberRelations = relations(member, ({ one }) => ({
+  organization: one(organization, {
+    fields: [member.organizationId],
+    references: [organization.id],
+  }),
+  user: one(user, {
+    fields: [member.userId],
+    references: [user.id],
+  }),
+}));
+
+export const organizationRelations = relations(organization, ({ many }) => ({
+  members: many(member),
+  institutions: many(institution),
+}));
+
+export const institutionRelations = relations(institution, ({ one }) => ({
+  organization: one(organization, {
+    fields: [institution.organizationId],
+    references: [organization.id],
+  }),
+}));

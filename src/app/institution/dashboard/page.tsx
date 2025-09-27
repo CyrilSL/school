@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { authClient } from "~/server/auth/client";
 import { Button } from "~/components/ui/button";
+import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 
 interface Student {
   id: string;
@@ -37,12 +39,48 @@ interface FeeApplication {
   }>;
 }
 
+interface InstitutionDetails {
+  id: string;
+  name: string;
+  type: string;
+  locations: Array<{city: string; state?: string; address?: string}>;
+  boards: string[];
+  city?: string;
+  state?: string;
+  address?: string;
+  board?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  isActive: boolean;
+}
+
 export default function InstitutionDashboard() {
   console.log("🟢 Institution Dashboard: Component started rendering");
 
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [feeApplications, setFeeApplications] = useState<FeeApplication[]>([]);
+  const [institutionDetails, setInstitutionDetails] = useState<InstitutionDetails | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      setSigningOut(true);
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push("/");
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error signing out:", error);
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   useEffect(() => {
     console.log("🟢 Institution Dashboard: useEffect started");
@@ -63,13 +101,26 @@ export default function InstitutionDashboard() {
           setUser({ name: "Institution Admin", email: "Loading..." });
         }
 
-        // Fetch EMI applications and platform payments data
-        console.log("🟢 Institution Dashboard: Fetching payments data...");
-        const response = await fetch("/api/institution/payments");
-        if (response.ok) {
-          const data = await response.json();
+        // Fetch institution details and EMI applications data
+        console.log("🟢 Institution Dashboard: Fetching institution details...");
+        const [detailsResponse, paymentsResponse] = await Promise.all([
+          fetch("/api/institution/details"),
+          fetch("/api/institution/payments")
+        ]);
+
+        if (detailsResponse.ok) {
+          const detailsData = await detailsResponse.json();
+          console.log("🟢 Institution Dashboard: Institution details received:", detailsData);
+          setInstitutionDetails(detailsData.institution);
+        } else {
+          const errorText = await detailsResponse.text();
+          console.log("🔴 Institution Dashboard: Failed to fetch institution details. Status:", detailsResponse.status, "Error:", errorText);
+        }
+
+        if (paymentsResponse.ok) {
+          const paymentsData = await paymentsResponse.json();
           console.log("🟢 Institution Dashboard: Payments data received");
-          setFeeApplications(data.emiApplications || []);
+          setFeeApplications(paymentsData.emiApplications || []);
         } else {
           console.log("🔴 Institution Dashboard: Failed to fetch payments data");
         }
@@ -96,14 +147,103 @@ export default function InstitutionDashboard() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Institution Dashboard</h1>
-        <p className="text-gray-600">Welcome, {user?.name}</p>
-        <div className="mt-2 p-2 bg-blue-100 rounded">
-          <p className="text-sm text-blue-800">
-            Role: Institution Admin | Organization: {user?.organizationId || "Not Assigned"}
-          </p>
+      {/* Header with Logout Button */}
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Institution Dashboard</h1>
+          <p className="text-gray-600">Welcome, {user?.name}</p>
         </div>
+        <Button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2 text-gray-600 border-gray-300 hover:border-red-500 hover:text-red-600"
+        >
+          {signingOut ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+              Signing out...
+            </>
+          ) : (
+            <>
+              <LogOut className="h-4 w-4" />
+              Logout
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Institution Details Card */}
+        {institutionDetails && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900">{institutionDetails.name}</h3>
+                <p className="text-sm text-blue-700 capitalize">{institutionDetails.type}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-blue-800">Locations</h4>
+                <div className="text-sm text-blue-600">
+                  {institutionDetails.locations && institutionDetails.locations.length > 0 ? (
+                    institutionDetails.locations.map((location, index) => (
+                      <div key={index}>
+                        {location.city}{location.state ? `, ${location.state}` : ''}
+                      </div>
+                    ))
+                  ) : institutionDetails.city ? (
+                    <div>{institutionDetails.city}{institutionDetails.state ? `, ${institutionDetails.state}` : ''}</div>
+                  ) : (
+                    <span className="text-gray-500">Not specified</span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-blue-800">Boards/Curriculum</h4>
+                <div className="text-sm text-blue-600">
+                  {institutionDetails.boards && institutionDetails.boards.length > 0 ? (
+                    institutionDetails.boards.join(', ')
+                  ) : institutionDetails.board ? (
+                    institutionDetails.board
+                  ) : (
+                    <span className="text-gray-500">Not specified</span>
+                  )}
+                </div>
+              </div>
+
+              {institutionDetails.email && (
+                <div>
+                  <h4 className="text-sm font-medium text-blue-800">Email</h4>
+                  <p className="text-sm text-blue-600">{institutionDetails.email}</p>
+                </div>
+              )}
+
+              {institutionDetails.phone && (
+                <div>
+                  <h4 className="text-sm font-medium text-blue-800">Phone</h4>
+                  <p className="text-sm text-blue-600">{institutionDetails.phone}</p>
+                </div>
+              )}
+
+              {institutionDetails.website && (
+                <div>
+                  <h4 className="text-sm font-medium text-blue-800">Website</h4>
+                  <a href={institutionDetails.website} target="_blank" rel="noopener noreferrer"
+                     className="text-sm text-blue-600 hover:text-blue-800 underline">
+                    {institutionDetails.website}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+      <div className="mt-2 p-2 bg-blue-100 rounded">
+        <p className="text-sm text-blue-800">
+          Role: Institution Admin | Status: {institutionDetails?.isActive ? 'Active' : 'Inactive'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">

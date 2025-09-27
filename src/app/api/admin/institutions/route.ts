@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { name, type, city, state, board, address, phone, email, website, isActive, locations, boards } = body;
+    const { name, type, locations, boards, phone, email, website, isActive } = body;
 
-    // Validate required fields - check both old and new format
+    // Validate required fields
     if (!name || !type) {
       return NextResponse.json(
         { error: "Missing required fields: name, type" },
@@ -29,13 +29,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if we have either old format (city/board) or new format (locations/boards)
-    const hasOldFormat = city && board;
-    const hasNewFormat = locations && locations.length > 0 && boards && boards.length > 0;
-
-    if (!hasOldFormat && !hasNewFormat) {
+    if (!locations || !Array.isArray(locations) || locations.length === 0) {
       return NextResponse.json(
-        { error: "Missing required fields: either (city, board) or (locations, boards)" },
+        { error: "Missing required field: locations (must be array with at least one location)" },
+        { status: 400 }
+      );
+    }
+
+    if (!boards || !Array.isArray(boards) || boards.length === 0) {
+      return NextResponse.json(
+        { error: "Missing required field: boards (must be array with at least one board)" },
         { status: 400 }
       );
     }
@@ -57,44 +60,23 @@ export async function POST(request: NextRequest) {
       createdAt: new Date(),
     });
 
-    // Prepare location and board data
-    let finalLocations = [];
-    let finalBoards = [];
-
-    if (hasNewFormat) {
-      finalLocations = locations;
-      finalBoards = boards;
-    } else {
-      // Convert old format to new format
-      finalLocations = [{ city, state: state || undefined, address: address || undefined }];
-      finalBoards = [board];
-    }
+    // Locations and boards are already in object format from the form
 
     // Create institution
     const institutionId = nanoid();
-    const institutionData: any = {
+    const institutionData = {
       id: institutionId,
       organizationId: organizationId,
       name: name,
       type: type,
-      city: city || finalLocations[0]?.city,
-      state: state || finalLocations[0]?.state || null,
-      board: board || finalBoards[0],
-      address: address || null,
+      locations: locations,
+      boards: boards,
       phone: phone || null,
       email: email || null,
       website: website || null,
       isActive: isActive !== undefined ? isActive : true,
       createdAt: new Date(),
     };
-
-    // Add new format fields if available (try to add them, but don't fail if columns don't exist yet)
-    try {
-      institutionData.locations = finalLocations;
-      institutionData.boards = finalBoards;
-    } catch (error) {
-      console.log("New columns not available yet, using legacy format");
-    }
 
     const newInstitution = await db.insert(institution).values(institutionData).returning();
 

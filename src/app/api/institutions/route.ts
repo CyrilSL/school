@@ -8,14 +8,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const institutionName = searchParams.get('institutionName');
 
-    // Base query - get all institutions first (remove isActive filter for debugging)
+    // Base query - get all institutions with new multi-format fields only
     const allInstitutions = await db.select({
       id: institution.id,
       name: institution.name,
       type: institution.type,
-      city: institution.city,
-      state: institution.state,
-      board: institution.board,
+      boards: institution.boards, // Multi-board field
+      locations: institution.locations, // Multi-location field
       website: institution.website,
       isActive: institution.isActive,
     }).from(institution);
@@ -25,20 +24,46 @@ export async function GET(request: NextRequest) {
 
     // If specific institution is requested, return its locations and boards
     if (institutionName) {
-      const institutionLocations = activeInstitutions.filter(inst =>
+      const institutionRecords = activeInstitutions.filter(inst =>
         inst.name.toLowerCase() === institutionName.toLowerCase()
       );
 
-      const locations = institutionLocations.map(inst => ({
-        id: inst.id,
-        city: inst.city,
-        state: inst.state,
-        location: `${inst.city}${inst.state ? `, ${inst.state}` : ''}`,
-        board: inst.board,
-        type: inst.type
-      }));
+      if (institutionRecords.length === 0) {
+        return NextResponse.json({
+          success: true,
+          locations: [],
+          boards: []
+        });
+      }
 
-      const boards = [...new Set(institutionLocations.map(inst => inst.board))].filter(Boolean);
+      // Use the first record to get institution-level data
+      const institutionData = institutionRecords[0];
+      console.log(`[API] Raw institution data for "${institutionName}":`, institutionData);
+
+      // Build locations from multi-location format (objects only)
+      console.log(`[API] Raw locations field:`, institutionData.locations);
+      const locations = (institutionData.locations || []).map((loc, index) => {
+        console.log(`[API] Processing location ${index}:`, loc);
+
+        const processedLocation = {
+          id: `${institutionData.id}-${index}`,
+          city: loc.city,
+          state: loc.state || null,
+          location: `${loc.city}${loc.state ? `, ${loc.state}` : ''}`,
+          board: null, // Boards are no longer tied to specific locations
+          type: institutionData.type
+        };
+
+        console.log(`[API] Processed location result:`, processedLocation);
+        return processedLocation;
+      });
+
+      // Get boards from multi-board format
+      console.log(`[API] Raw boards field:`, institutionData.boards);
+      const boards = institutionData.boards || [];
+
+      console.log(`[API] Final processed locations:`, locations);
+      console.log(`[API] Final processed boards:`, boards);
 
       return NextResponse.json({
         success: true,
@@ -61,8 +86,16 @@ export async function GET(request: NextRequest) {
       }
       const group = institutionsByName.get(inst.name);
       group.campusCount++;
-      group.cities.add(inst.city);
-      if (inst.board) group.boards.add(inst.board);
+
+      // Handle cities from multi-location format
+      if (inst.locations && Array.isArray(inst.locations)) {
+        inst.locations.forEach(loc => group.cities.add(loc.city));
+      }
+
+      // Handle boards from multi-board format
+      if (inst.boards && Array.isArray(inst.boards)) {
+        inst.boards.forEach(board => group.boards.add(board));
+      }
     });
 
     // Convert to array and format

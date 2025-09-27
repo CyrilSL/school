@@ -127,8 +127,47 @@ export default function StudentInstitutionForm() {
       const response = await fetch(`/api/institutions?institutionName=${encodeURIComponent(institutionName)}`);
       if (response.ok) {
         const data = await response.json();
+        console.log('[FORM] Institution data received:', data);
+        console.log('[FORM] Locations array:', data.locations);
+        console.log('[FORM] Boards array:', data.boards);
+
         setInstitutionLocations(data.locations);
         setAvailableBoards(data.boards);
+
+        // Auto-select if only one location exists
+        if (data.locations && data.locations.length === 1) {
+          const singleLocation = data.locations[0];
+          console.log('[FORM] Auto-selecting single location:', singleLocation);
+          console.log('[FORM] Location string from singleLocation.location:', singleLocation.location);
+
+          setFormData(prev => {
+            const newFormData = {
+              ...prev,
+              institutionId: singleLocation.id,
+              location: singleLocation.location,
+              // Don't auto-set board from location - let the board logic handle it
+            };
+            console.log('[FORM] Updated form data after location selection:', newFormData);
+            return newFormData;
+          });
+        } else {
+          console.log(`[FORM] Not auto-selecting location. Locations length: ${data.locations?.length || 0}`);
+        }
+
+        // Auto-select board ONLY if exactly one board exists
+        if (data.boards && data.boards.length === 1) {
+          console.log('[FORM] Auto-selecting single board:', data.boards[0]);
+          setFormData(prev => {
+            const newFormData = {
+              ...prev,
+              board: data.boards[0],
+            };
+            console.log('[FORM] Updated form data after board selection:', newFormData);
+            return newFormData;
+          });
+        } else {
+          console.log(`[FORM] Not auto-selecting board. Boards length: ${data.boards?.length || 0}`);
+        }
       }
     } catch (error) {
       console.error('Error fetching institution locations:', error);
@@ -200,7 +239,8 @@ export default function StudentInstitutionForm() {
       ...prev,
       institutionId: location.id,
       location: location.location,
-      board: location.board || "",
+      // Only set board if there's exactly one available board
+      board: availableBoards.length === 1 ? availableBoards[0] : "",
     }));
     setLocationOpen(false);
   };
@@ -418,7 +458,7 @@ export default function StudentInstitutionForm() {
                               <div className="flex flex-col">
                                 <div className="font-medium">{institution.name}</div>
                                 <div className="text-sm text-gray-500">
-                                  {institution.type} • {institution.campusCount} campus{institution.campusCount > 1 ? 'es' : ''}
+                                  {institution.type}
                                 </div>
                               </div>
                             </CommandItem>
@@ -432,84 +472,108 @@ export default function StudentInstitutionForm() {
 
               <div className="space-y-2">
                 <Label>Select Location</Label>
-                <Popover open={locationOpen} onOpenChange={setLocationOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={locationOpen}
-                      disabled={!formData.institutionName || institutionLocations.length === 0}
-                      className="h-12 w-full justify-between pl-10 text-left font-normal disabled:opacity-50"
-                    >
-                      <MapPin className="absolute left-3 h-4 w-4 text-gray-400" />
-                      {formData.location || "Select location..."}
-                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0 bg-white border border-gray-200 shadow-lg">
-                    <Command className="bg-white">
-                      <CommandInput placeholder="Search locations..." className="bg-white" />
-                      <CommandList className="bg-white">
-                        <CommandEmpty className="bg-white">No locations found.</CommandEmpty>
-                        <CommandGroup className="bg-white">
-                          {institutionLocations.map((location) => (
-                            <CommandItem
-                              key={location.id}
-                              value={location.location}
-                              onSelect={() => handleLocationSelect(location)}
-                              className="bg-white hover:bg-gray-50"
-                            >
-                              <div className="flex flex-col">
-                                <div className="font-medium">{location.location}</div>
-                                <div className="text-sm text-gray-500">
-                                  {location.board} • {location.type}
+                {(() => {
+                  console.log('[RENDER] institutionLocations.length:', institutionLocations.length);
+                  console.log('[RENDER] institutionLocations:', institutionLocations);
+                  console.log('[RENDER] formData.location:', formData.location);
+                  return null;
+                })()}
+                {institutionLocations.length === 1 ? (
+                  <div className="h-12 w-full border border-gray-200 rounded-md flex items-center pl-10 bg-gray-50">
+                    <MapPin className="absolute left-3 h-4 w-4 text-gray-400" />
+                    <div className="flex flex-col">
+                      <div className="font-medium text-gray-900">{formData.location}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <Popover open={locationOpen} onOpenChange={setLocationOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={locationOpen}
+                        disabled={!formData.institutionName || institutionLocations.length === 0}
+                        className="h-12 w-full justify-between pl-10 text-left font-normal disabled:opacity-50"
+                      >
+                        <MapPin className="absolute left-3 h-4 w-4 text-gray-400" />
+                        {formData.location || "Select location..."}
+                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0 bg-white border border-gray-200 shadow-lg">
+                      <Command className="bg-white">
+                        <CommandInput placeholder="Search locations..." className="bg-white" />
+                        <CommandList className="bg-white">
+                          <CommandEmpty className="bg-white">No locations found.</CommandEmpty>
+                          <CommandGroup className="bg-white">
+                            {institutionLocations.map((location) => (
+                              <CommandItem
+                                key={location.id}
+                                value={location.location}
+                                onSelect={() => handleLocationSelect(location)}
+                                className="bg-white hover:bg-gray-50"
+                              >
+                                <div className="flex flex-col">
+                                  <div className="font-medium">{location.location}</div>
+                                  <div className="text-sm text-gray-500">
+                                    {location.board} • {location.type}
+                                  </div>
                                 </div>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label>Select Board / Stream</Label>
-                <Popover open={boardOpen} onOpenChange={setBoardOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={boardOpen}
-                      disabled={!formData.location || availableBoards.length === 0}
-                      className="h-12 w-full justify-between pl-10 text-left font-normal disabled:opacity-50"
-                    >
-                      <BookOpen className="absolute left-3 h-4 w-4 text-gray-400" />
-                      {formData.board || "Select board..."}
-                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0 bg-white border border-gray-200 shadow-lg">
-                    <Command className="bg-white">
-                      <CommandList className="bg-white">
-                        <CommandEmpty className="bg-white">No boards found.</CommandEmpty>
-                        <CommandGroup className="bg-white">
-                          {availableBoards.map((board) => (
-                            <CommandItem
-                              key={board}
-                              value={board}
-                              onSelect={() => handleBoardSelect(board)}
-                              className="bg-white hover:bg-gray-50"
-                            >
-                              <div className="font-medium">{board}</div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                {availableBoards.length === 1 ? (
+                  <div className="h-12 w-full border border-gray-200 rounded-md flex items-center pl-10 bg-gray-50">
+                    <BookOpen className="absolute left-3 h-4 w-4 text-gray-400" />
+                    <div className="flex flex-col">
+                      <div className="font-medium text-gray-900">{formData.board}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <Popover open={boardOpen} onOpenChange={setBoardOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={boardOpen}
+                        disabled={!formData.location || availableBoards.length === 0}
+                        className="h-12 w-full justify-between pl-10 text-left font-normal disabled:opacity-50"
+                      >
+                        <BookOpen className="absolute left-3 h-4 w-4 text-gray-400" />
+                        {formData.board || "Select board..."}
+                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0 bg-white border border-gray-200 shadow-lg">
+                      <Command className="bg-white">
+                        <CommandList className="bg-white">
+                          <CommandEmpty className="bg-white">No boards found.</CommandEmpty>
+                          <CommandGroup className="bg-white">
+                            {availableBoards.map((board) => (
+                              <CommandItem
+                                key={board}
+                                value={board}
+                                onSelect={() => handleBoardSelect(board)}
+                                className="bg-white hover:bg-gray-50"
+                              >
+                                <div className="font-medium">{board}</div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
 
               <div className="space-y-2">

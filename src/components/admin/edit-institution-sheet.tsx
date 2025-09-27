@@ -219,11 +219,21 @@ export default function EditInstitutionSheet({ institution, open, onOpenChange }
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...formData,
-          // For backward compatibility with existing API, set first location as city/state
-          city: formData.locations[0]?.split(', ')[0] || "",
-          state: formData.locations[0]?.split(', ')[1] || "",
-          board: formData.boards[0] || "",
+          name: formData.name,
+          type: formData.type,
+          locations: formData.locations.map(locationString => {
+            const parts = locationString.split(', ');
+            return {
+              city: parts[0],
+              state: parts[1] || undefined,
+              address: undefined
+            };
+          }),
+          boards: formData.boards,
+          phone: formData.phone,
+          email: formData.email,
+          website: formData.website,
+          isActive: formData.isActive,
         }),
       });
 

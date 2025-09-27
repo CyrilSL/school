@@ -1,9 +1,6 @@
 "use client";
 
-import { Building, MapPin } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import AdminDashboardClient from "./admin-dashboard-client";
-import LocationManagement from "./location-management";
 
 interface Institution {
   id: string;
@@ -39,26 +36,7 @@ export default function TabbedAdminDashboard({ institutions }: TabbedAdminDashbo
           </div>
         </div>
 
-        <Tabs defaultValue="institutions" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[400px] mb-6">
-            <TabsTrigger value="institutions" className="flex items-center space-x-2">
-              <Building className="h-4 w-4" />
-              <span>Institutions</span>
-            </TabsTrigger>
-            <TabsTrigger value="locations" className="flex items-center space-x-2">
-              <MapPin className="h-4 w-4" />
-              <span>Locations</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="institutions" className="space-y-4">
-            <AdminDashboardClient institutions={institutions} />
-          </TabsContent>
-
-          <TabsContent value="locations" className="space-y-4">
-            <LocationManagement />
-          </TabsContent>
-        </Tabs>
+        <AdminDashboardClient institutions={institutions} />
       </div>
     </main>
   );

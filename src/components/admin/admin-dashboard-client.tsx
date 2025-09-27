@@ -6,7 +6,8 @@ import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Badge } from "~/components/ui/badge";
-import { Building, Search, Edit, Phone, MapPin } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "~/components/ui/dropdown-menu";
+import { Building, Search, Edit, Phone, MapPin, MoreHorizontal, Trash2 } from "lucide-react";
 import AddInstitutionSheet from "./add-institution-sheet";
 import EditInstitutionSheet from "./edit-institution-sheet";
 
@@ -35,6 +36,7 @@ export default function AdminDashboardClient({ institutions }: AdminDashboardCli
   const [searchQuery, setSearchQuery] = useState("");
   const [editingInstitution, setEditingInstitution] = useState<Institution | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [deletingInstitution, setDeletingInstitution] = useState<string | null>(null);
 
   const filteredInstitutions = useMemo(() => {
     if (!searchQuery.trim()) return institutions;
@@ -57,6 +59,32 @@ export default function AdminDashboardClient({ institutions }: AdminDashboardCli
   const handleEditSheetClose = () => {
     setEditSheetOpen(false);
     setEditingInstitution(null);
+  };
+
+  const handleDeleteInstitution = async (institutionId: string) => {
+    if (!confirm("Are you sure you want to delete this institution? This action cannot be undone.")) {
+      return;
+    }
+
+    setDeletingInstitution(institutionId);
+
+    try {
+      const response = await fetch(`/api/institutions/${institutionId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete institution');
+      }
+
+      // Refresh the page to show updated data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error deleting institution:', error);
+      alert('Failed to delete institution. Please try again.');
+    } finally {
+      setDeletingInstitution(null);
+    }
   };
 
   return (
@@ -153,14 +181,32 @@ export default function AdminDashboardClient({ institutions }: AdminDashboardCli
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => handleEditInstitution(inst)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                disabled={deletingInstitution === inst.id}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditInstitution(inst)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteInstitution(inst.id)}
+                                className="text-red-600 focus:text-red-600"
+                                disabled={deletingInstitution === inst.id}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {deletingInstitution === inst.id ? "Deleting..." : "Delete"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}

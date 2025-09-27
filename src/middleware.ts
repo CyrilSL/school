@@ -6,6 +6,8 @@ import type { Session } from "~/server/auth";
 const authRoutes = ["/signup", "/signup/parent", "/signup/institution", "/login/parent", "/login/institution", "/admin/signin"];
 const passwordRoutes = ["/reset-password", "/forgot-password"];
 const protectedAdminRoutes = ["/admin/dashboard", "/admin/institutions"];
+const protectedInstitutionRoutes = ["/institution/dashboard"];
+const protectedParentRoutes = ["/parent/dashboard"];
 // const noAuthRoutes = ["/test"];
 
 export default async function authMiddleware(request: NextRequest) {
@@ -14,6 +16,8 @@ export default async function authMiddleware(request: NextRequest) {
   const isAuthRoute = authRoutes.includes(pathName);
   const isPasswordRoute = passwordRoutes.includes(pathName);
   const isProtectedAdminRoute = protectedAdminRoutes.some(route => pathName.startsWith(route));
+  const isProtectedInstitutionRoute = protectedInstitutionRoutes.some(route => pathName.startsWith(route));
+  const isProtectedParentRoute = protectedParentRoutes.some(route => pathName.startsWith(route));
   const isAdminBaseRoute = pathName === "/admin";
   // const isOnlyProtectedRoutes = onlyProtectedRoutes.includes(pathName);
   // const isNoAuthRoute = noAuthRoutes.includes(pathName);
@@ -33,6 +37,7 @@ export default async function authMiddleware(request: NextRequest) {
     },
   );
 
+
   if (!session) {
     // Allow access to auth routes, password routes
     if (isAuthRoute || isPasswordRoute) {
@@ -49,6 +54,16 @@ export default async function authMiddleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/admin/signin", request.url));
     }
 
+    // Block access to protected institution routes
+    if (isProtectedInstitutionRoute) {
+      return NextResponse.redirect(new URL("/login/institution", request.url));
+    }
+
+    // Block access to protected parent routes
+    if (isProtectedParentRoute) {
+      return NextResponse.redirect(new URL("/login/parent", request.url));
+    }
+
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -60,6 +75,28 @@ export default async function authMiddleware(request: NextRequest) {
   // Check admin access for protected admin routes and base admin route
   if ((isProtectedAdminRoute || isAdminBaseRoute) && session.user.role !== "admin") {
     return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Check organization membership for institution routes
+  if (isProtectedInstitutionRoute) {
+    try {
+      // Check if user has organization membership using better-auth API
+      const { data: activeMember } = await betterFetch(
+        "/api/auth/organization/get-active-member",
+        {
+          baseURL: env.BETTER_AUTH_URL,
+          headers: {
+            cookie: request.headers.get("cookie") ?? "",
+          },
+        },
+      );
+
+      if (!activeMember) {
+        return NextResponse.redirect(new URL("/parent/dashboard", request.url));
+      }
+    } catch (error) {
+      return NextResponse.redirect(new URL("/parent/dashboard", request.url));
+    }
   }
 
   return NextResponse.next();

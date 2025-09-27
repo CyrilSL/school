@@ -71,6 +71,9 @@ export const session = createTable("session", {
     .notNull()
     .references(() => user.id),
   impersonatedBy: text("impersonated_by"),
+  // Better Auth organization plugin fields
+  activeOrganizationId: text("active_organization_id"),
+  activeTeamId: text("active_team_id"),
 });
 
 export const account = createTable("account", {

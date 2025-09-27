@@ -38,31 +38,46 @@ interface FeeApplication {
 }
 
 export default function InstitutionDashboard() {
+  console.log("🟢 Institution Dashboard: Component started rendering");
+
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [feeApplications, setFeeApplications] = useState<FeeApplication[]>([]);
 
   useEffect(() => {
+    console.log("🟢 Institution Dashboard: useEffect started");
     const initializeData = async () => {
       try {
+        // Middleware already verified session and organization membership
+        // So we can trust that the user is authenticated and is an institution user
+        console.log("🟢 Institution Dashboard: Middleware verified auth, proceeding...");
+
+        // Try to get session for display purposes, but don't block on it
         const session = await authClient.getSession();
-        if (!session?.user) {
-          window.location.href = "/login/institution";
-          return;
+        if (session?.user) {
+          console.log("🟢 Institution Dashboard: Got user data for display");
+          setUser(session.user);
+        } else {
+          console.log("🟡 Institution Dashboard: No client session yet, using placeholder");
+          // Set a placeholder user since middleware verified auth
+          setUser({ name: "Institution Admin", email: "Loading..." });
         }
 
-        setUser(session.user);
-
         // Fetch EMI applications and platform payments data
+        console.log("🟢 Institution Dashboard: Fetching payments data...");
         const response = await fetch("/api/institution/payments");
         if (response.ok) {
           const data = await response.json();
+          console.log("🟢 Institution Dashboard: Payments data received");
           setFeeApplications(data.emiApplications || []);
+        } else {
+          console.log("🔴 Institution Dashboard: Failed to fetch payments data");
         }
-        
+
+        console.log("🟢 Institution Dashboard: Setting loading to false");
         setLoading(false);
       } catch (error) {
-        console.error("Error initializing dashboard:", error);
+        console.error("🔴 Institution Dashboard: Error initializing dashboard:", error);
         setLoading(false);
       }
     };
@@ -73,7 +88,11 @@ export default function InstitutionDashboard() {
   // EMI applications are now managed entirely by the platform
   // Institutions only view the status and receive payments
 
+  console.log("🟢 Institution Dashboard: Rendering, loading:", loading);
+
   if (loading) return <div>Loading...</div>;
+
+  console.log("🟢 Institution Dashboard: About to return main content");
 
   return (
     <div className="container mx-auto p-6">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "~/components/ui/button";
-import { getServerSession } from "~/server/auth";
+import { getServerSession, auth } from "~/server/auth";
 import SignoutButton from "~/components/auth/signout-button";
 import {
   DropdownMenu,
@@ -10,9 +10,26 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
+import { headers } from "next/headers";
 
 export default async function Navbar() {
   const session = await getServerSession();
+
+  // Check if user is an institution member using better-auth organization API
+  let isInstitutionUser = false;
+  if (session?.user?.id) {
+    try {
+      const headersList = await headers();
+      const activeMember = await auth.api.getActiveMember({
+        headers: headersList,
+      });
+      isInstitutionUser = !!activeMember;
+    } catch (error) {
+      // User is not a member of any organization
+      isInstitutionUser = false;
+    }
+  }
+
   return (
     <nav className="bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
       <div className="container mx-auto px-4">
@@ -93,6 +110,8 @@ export default async function Navbar() {
               <Link href={
                 session.user?.role === "admin"
                   ? "/admin/dashboard"
+                  : isInstitutionUser
+                  ? "/institution/dashboard"
                   : "/parent/dashboard"
               }>
                 <Button
@@ -112,6 +131,8 @@ export default async function Navbar() {
               <Link href={
                 session.user?.role === "admin"
                   ? "/admin/dashboard"
+                  : isInstitutionUser
+                  ? "/institution/dashboard"
                   : "/parent/dashboard"
               }>
                 <Button

@@ -8,6 +8,8 @@ import {
   sendVerificationEmail,
 } from "~/server/auth/email";
 import { db } from "~/server/db";
+import { member } from "~/server/db/schema";
+import { eq } from "drizzle-orm";
 
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
@@ -25,6 +27,35 @@ export const auth = betterAuth({
       roles: ["admin", "parent"], // Institution admin and parent roles
     }),
   ],
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          try {
+            // Check if user has organization membership
+            const membership = await db
+              .select()
+              .from(member)
+              .where(eq(member.userId, session.userId))
+              .limit(1);
+
+            if (membership.length > 0) {
+              // Set active organization for institution users
+              return {
+                data: {
+                  ...session,
+                  activeOrganizationId: membership[0].organizationId,
+                },
+              };
+            }
+          } catch (error) {
+            console.error("Error setting active organization:", error);
+          }
+          return { data: session };
+        },
+      },
+    },
+  },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day (every 1 day the session expiration is updated)

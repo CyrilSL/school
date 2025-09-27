@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "~/server/auth";
+import { getServerSession, auth } from "~/server/auth";
 import { db } from "~/server/db";
-import { institution, organization } from "~/server/db/schema";
+import { institution, organization, member } from "~/server/db/schema";
 import { nanoid } from "nanoid";
 
 export async function POST(request: NextRequest) {
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { name, type, locations, boards, phone, email, website, isActive } = body;
+    const { name, type, locations, boards, phone, email, website, isActive, adminEmail, adminPassword, adminName } = body;
 
     // Validate required fields
     if (!name || !type) {
@@ -47,6 +47,28 @@ export async function POST(request: NextRequest) {
     if (email && !email.includes('@')) {
       return NextResponse.json(
         { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    // Validate admin credentials if provided
+    if (!adminEmail || !adminPassword || !adminName) {
+      return NextResponse.json(
+        { error: "Missing required admin credentials: adminEmail, adminPassword, adminName" },
+        { status: 400 }
+      );
+    }
+
+    if (!adminEmail.includes('@')) {
+      return NextResponse.json(
+        { error: "Invalid admin email format" },
+        { status: 400 }
+      );
+    }
+
+    if (adminPassword.length < 6) {
+      return NextResponse.json(
+        { error: "Admin password must be at least 6 characters long" },
         { status: 400 }
       );
     }
@@ -80,10 +102,64 @@ export async function POST(request: NextRequest) {
 
     const newInstitution = await db.insert(institution).values(institutionData).returning();
 
+    // Create admin user using Better Auth API
+    const { data: newUser, error: userError } = await auth.api.signUpEmail({
+      body: {
+        name: adminName,
+        email: adminEmail,
+        password: adminPassword,
+      }
+    });
+
+    // Auto-verify the email for admin-created users
+    if (newUser && !userError) {
+      try {
+        await fetch(`${process.env.BETTER_AUTH_URL}/api/auth/verify-demo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: adminEmail })
+        });
+        console.log("Auto-verified admin user email:", adminEmail);
+      } catch (verifyError) {
+        console.warn("Failed to auto-verify admin email:", verifyError);
+      }
+    }
+
+    if (userError) {
+      console.error("Failed to create admin user:", userError);
+      return NextResponse.json(
+        { error: "Failed to create admin user: " + userError.message },
+        { status: 500 }
+      );
+    }
+
+    if (!newUser) {
+      return NextResponse.json(
+        { error: "Failed to create admin user: no user returned" },
+        { status: 500 }
+      );
+    }
+
+    console.log("Created new user via Better Auth:", newUser.email);
+
+    // Add user as member of the organization with admin role
+    await db.insert(member).values({
+      id: nanoid(),
+      organizationId: organizationId,
+      userId: newUser.id,
+      role: "admin",
+      createdAt: new Date(),
+    });
+
     return NextResponse.json({
       success: true,
       institution: newInstitution[0],
-      message: "Institution created successfully"
+      adminUser: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+      },
+      message: "Institution and admin login created successfully"
     });
 
   } catch (error) {

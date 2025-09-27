@@ -50,6 +50,10 @@ interface InstitutionData {
   email: string;
   website: string;
   isActive: boolean;
+  // Login credentials
+  adminEmail: string;
+  adminPassword: string;
+  adminName: string;
 }
 
 interface EditInstitutionSheetProps {
@@ -60,8 +64,50 @@ interface EditInstitutionSheetProps {
 
 export default function EditInstitutionSheet({ institution, open, onOpenChange }: EditInstitutionSheetProps) {
   const { toast } = useToast();
+
+  const handleVerifyEmail = async (email: string) => {
+    if (!email || !email.includes('@')) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setVerifyingEmail(email);
+    try {
+      const response = await fetch("/api/auth/verify-demo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
+        setVerificationStatus(prev => ({ ...prev, [email]: true }));
+        toast({
+          title: "Email verified",
+          description: `${email} has been verified successfully`,
+        });
+      } else {
+        throw new Error("Verification failed");
+      }
+    } catch (error) {
+      toast({
+        title: "Verification failed",
+        description: "Failed to verify email. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setVerifyingEmail(null);
+    }
+  };
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<{ [email: string]: boolean }>({});
+  const [verifyingEmail, setVerifyingEmail] = useState<string | null>(null);
   const [formData, setFormData] = useState<InstitutionData>({
     name: "",
     type: "",
@@ -76,6 +122,10 @@ export default function EditInstitutionSheet({ institution, open, onOpenChange }
     email: "",
     website: "",
     isActive: true,
+    // Login credentials
+    adminEmail: "",
+    adminPassword: "",
+    adminName: "",
   });
 
   useEffect(() => {
@@ -121,15 +171,28 @@ export default function EditInstitutionSheet({ institution, open, onOpenChange }
         email: institution.email || "",
         website: institution.website || "",
         isActive: institution.isActive,
+        // Login credentials - leave empty for edit mode
+        adminEmail: "",
+        adminPassword: "",
+        adminName: "",
       });
     }
   }, [institution]);
 
   const handleInputChange = (field: keyof InstitutionData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [field]: value
+      };
+
+      // Auto-fill admin name when institution name changes (if admin name is empty)
+      if (field === 'name' && !prev.adminName.trim()) {
+        updated.adminName = value;
+      }
+
+      return updated;
+    });
   };
 
   const handleSwitchChange = (field: keyof InstitutionData, value: boolean) => {
@@ -202,6 +265,53 @@ export default function EditInstitutionSheet({ institution, open, onOpenChange }
       return false;
     }
 
+    // Validate admin credentials only if provided
+    if (formData.adminEmail && !formData.adminEmail.includes('@')) {
+      toast({
+        title: "Invalid admin email",
+        description: "Please enter a valid admin email address",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (formData.adminPassword && formData.adminPassword.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // If any admin field is filled, require all admin fields
+    if (formData.adminEmail || formData.adminPassword || formData.adminName) {
+      if (!formData.adminEmail.trim()) {
+        toast({
+          title: "Missing admin email",
+          description: "Please enter admin email",
+          variant: "destructive"
+        });
+        return false;
+      }
+      if (!formData.adminPassword.trim()) {
+        toast({
+          title: "Missing admin password",
+          description: "Please enter admin password",
+          variant: "destructive"
+        });
+        return false;
+      }
+      if (!formData.adminName.trim()) {
+        toast({
+          title: "Missing admin name",
+          description: "Please enter admin name",
+          variant: "destructive"
+        });
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -234,6 +344,12 @@ export default function EditInstitutionSheet({ institution, open, onOpenChange }
           email: formData.email,
           website: formData.website,
           isActive: formData.isActive,
+          // Include admin credentials only if provided
+          ...(formData.adminEmail && {
+            adminEmail: formData.adminEmail,
+            adminPassword: formData.adminPassword,
+            adminName: formData.adminName,
+          }),
         }),
       });
 
@@ -363,6 +479,88 @@ export default function EditInstitutionSheet({ institution, open, onOpenChange }
               </div>
             </div>
 
+            {/* Login Credentials */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Login Credentials</h3>
+              <p className="text-sm text-gray-600">Update admin login credentials (leave blank to keep existing)</p>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="adminName">Admin Name</Label>
+                  <Input
+                    id="adminName"
+                    value={formData.adminName}
+                    onChange={(e) => handleInputChange("adminName", e.target.value)}
+                    placeholder="Full name of admin"
+                    className="placeholder:text-gray-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adminEmail">Admin Email</Label>
+                  <Input
+                    id="adminEmail"
+                    type="email"
+                    value={formData.adminEmail}
+                    onChange={(e) => handleInputChange("adminEmail", e.target.value)}
+                    placeholder="admin@institution.edu"
+                    className="placeholder:text-gray-400"
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-sm text-gray-500">
+                      This email will be used to log into the institution dashboard
+                    </p>
+                    {formData.adminEmail && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleVerifyEmail(formData.adminEmail)}
+                        disabled={verifyingEmail === formData.adminEmail || verificationStatus[formData.adminEmail]}
+                        className="ml-2"
+                      >
+                        {verifyingEmail === formData.adminEmail ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
+                            Verifying...
+                          </>
+                        ) : verificationStatus[formData.adminEmail] ? (
+                          <>
+                            <svg className="w-3 h-3 text-green-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Verified
+                          </>
+                        ) : (
+                          "Verify Email"
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                  {verificationStatus[formData.adminEmail] && (
+                    <p className="text-sm text-green-600 mt-1">
+                      ✓ Email verified - admin can log in immediately
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adminPassword">New Password</Label>
+                  <Input
+                    id="adminPassword"
+                    type="password"
+                    value={formData.adminPassword}
+                    onChange={(e) => handleInputChange("adminPassword", e.target.value)}
+                    placeholder="Enter new password"
+                    className="placeholder:text-gray-400"
+                  />
+                  <p className="text-sm text-gray-500">
+                    Minimum 6 characters. Leave blank to keep existing password.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Contact Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">Contact Information</h3>
@@ -380,15 +578,18 @@ export default function EditInstitutionSheet({ institution, open, onOpenChange }
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">General Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    placeholder="Email address"
+                    placeholder="info@institution.edu"
                     className="placeholder:text-gray-400"
                   />
+                  <p className="text-sm text-gray-500">
+                    Public contact email (optional)
+                  </p>
                 </div>
               </div>
 

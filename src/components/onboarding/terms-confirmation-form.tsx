@@ -2,31 +2,58 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Checkbox } from "~/components/ui/checkbox";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "~/components/ui/form";
 import { useToast } from "~/hooks/use-toast";
 import { Loader2, CheckCircle, FileText, Shield, CreditCard } from "lucide-react";
 
-interface ConfirmationData {
-  termsAccepted: boolean;
-  privacyAccepted: boolean;
-  creditCheckConsent: boolean;
-  communicationConsent: boolean;
-}
+// Zod schema for validation
+const termsConfirmationSchema = z.object({
+  termsAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms and conditions",
+  }),
+  privacyAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the privacy policy",
+  }),
+  creditCheckConsent: z.boolean().refine((val) => val === true, {
+    message: "Credit check consent is required",
+  }),
+  communicationConsent: z.boolean().optional(),
+});
+
+type TermsConfirmationFormValues = z.infer<typeof termsConfirmationSchema>;
 
 export default function TermsConfirmationForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const [formData, setFormData] = useState<ConfirmationData>({
-    termsAccepted: false,
-    privacyAccepted: false,
-    creditCheckConsent: false,
-    communicationConsent: false,
-  });
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [applicationSummary, setApplicationSummary] = useState<any>(null);
+
+  // Initialize form with react-hook-form
+  const form = useForm<TermsConfirmationFormValues>({
+    resolver: zodResolver(termsConfirmationSchema),
+    defaultValues: {
+      termsAccepted: false,
+      privacyAccepted: false,
+      creditCheckConsent: false,
+      communicationConsent: false,
+    },
+    mode: "onChange",
+  });
+
+  const { formState: { isSubmitting, isValid } } = form;
 
   useEffect(() => {
     // Collect data from both legacy and new flows
@@ -98,48 +125,24 @@ export default function TermsConfirmationForm() {
     // Load saved consent data
     const savedData = localStorage.getItem('onboarding-terms-confirmation');
     if (savedData) {
-      setFormData(JSON.parse(savedData));
-    }
-    
-    setLoading(false);
-  }, [router]);
-
-  const handleConsentChange = (field: keyof ConfirmationData, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: checked
-    }));
-  };
-
-  const saveProgress = () => {
-    localStorage.setItem('onboarding-terms-confirmation', JSON.stringify(formData));
-  };
-
-  const validateForm = () => {
-    const requiredConsents: (keyof ConfirmationData)[] = [
-      "termsAccepted", "privacyAccepted", "creditCheckConsent"
-    ];
-    
-    for (const consent of requiredConsents) {
-      if (!formData[consent]) {
-        toast({
-          title: "Required consent missing",
-          description: `Please accept all required terms and conditions to proceed`,
-          variant: "destructive"
-        });
-        return false;
+      try {
+        const parsed = JSON.parse(savedData);
+        form.reset(parsed);
+      } catch (error) {
+        console.error("Error loading saved data:", error);
       }
     }
+  }, [form]);
 
-    return true;
-  };
+  // Auto-save to localStorage when form values change
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      localStorage.setItem('onboarding-terms-confirmation', JSON.stringify(values));
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
-
-    saveProgress();
-    setSubmitting(true);
-
+  const onSubmit = async (data: TermsConfirmationFormValues) => {
     try {
       // Collect all local sources
       const studentDetails = JSON.parse(localStorage.getItem('onboarding-student-details') || '{}');
@@ -148,7 +151,7 @@ export default function TermsConfirmationForm() {
       const parentPan = JSON.parse(localStorage.getItem('onboarding-parent-pan') || '{}');
       const primaryEarner = JSON.parse(localStorage.getItem('onboarding-primary-earner') || '{}');
       const personalDetails = JSON.parse(localStorage.getItem('onboarding-personal-details') || '{}');
-      
+
       // Build API payload to satisfy server required fields
       const studentName = studentDetails.studentName || [studentInstitution.studentFirstName, studentInstitution.studentLastName].filter(Boolean).join(' ');
       const feeAmount = studentDetails.feeAmount || studentInstitution.annualFeeAmount;
@@ -194,7 +197,7 @@ export default function TermsConfirmationForm() {
         companyType: personalDetails.companyType,
 
         // Step 6 consents
-        ...formData,
+        ...data,
 
         applicationSummary,
         submittedAt: new Date().toISOString(),
@@ -216,7 +219,6 @@ export default function TermsConfirmationForm() {
           description: `Please complete: ${missing.join(', ')}`,
           variant: 'destructive',
         });
-        setSubmitting(false);
         if (missing[0].startsWith('Student Details')) router.push('/parent/apply/steps/1');
         else if (missing[0] === 'EMI Plan') router.push('/parent/apply/steps/2');
         else if (missing[0].startsWith('Parent PAN')) router.push('/parent/apply/steps/3');
@@ -242,8 +244,10 @@ export default function TermsConfirmationForm() {
 
       // Clear saved data
       localStorage.removeItem('onboarding-student-details');
+      localStorage.removeItem('onboarding-student-institution');
       localStorage.removeItem('onboarding-emi-plan');
       localStorage.removeItem('onboarding-parent-pan');
+      localStorage.removeItem('onboarding-primary-earner');
       localStorage.removeItem('onboarding-personal-details');
       localStorage.removeItem('onboarding-terms-confirmation');
 
@@ -251,7 +255,7 @@ export default function TermsConfirmationForm() {
         title: "🎉 Application Submitted Successfully!",
         description: "Your loan application has been submitted and is being processed.",
       });
-      
+
       // Redirect to success/dashboard page
       router.push("/parent/dashboard?onboarding=completed");
     } catch (error) {
@@ -261,35 +265,24 @@ export default function TermsConfirmationForm() {
         description: error instanceof Error ? error.message : "Failed to submit application. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setSubmitting(false);
     }
   };
 
   const handleBack = () => {
-    saveProgress();
+    const currentValues = form.getValues();
+    localStorage.setItem('onboarding-terms-confirmation', JSON.stringify(currentValues));
     router.push("/parent/apply/steps/5");
   };
 
   const handleSaveAndExit = () => {
-    saveProgress();
+    const currentValues = form.getValues();
+    localStorage.setItem('onboarding-terms-confirmation', JSON.stringify(currentValues));
     toast({
       title: "Progress saved",
       description: "Your progress has been saved. You can continue later from your dashboard."
     });
     router.push("/parent/dashboard");
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading application summary...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -302,184 +295,224 @@ export default function TermsConfirmationForm() {
           <p className="text-gray-600">Review your application details and confirm to proceed</p>
         </div>
 
-        <div className="p-8">
-          {/* Application Summary */}
-          {applicationSummary && (
-            <div className="mb-8">
-              <h3 className="text-xl font-bold text-gray-800 mb-6">Application Summary</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Student Details */}
-                <Card className="border-2 border-blue-100">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center">
-                      <FileText className="h-5 w-5 text-blue-600 mr-2" />
-                      Student Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div><strong>Name:</strong> {applicationSummary.student.name}</div>
-                    <div><strong>Institution:</strong> {applicationSummary.student.institution}</div>
-                    <div><strong>Class:</strong> {applicationSummary.student.class}</div>
-                    <div><strong>Fee Type:</strong> {applicationSummary.student.feeType}</div>
-                    <div><strong>Fee Amount:</strong> ₹{applicationSummary.student.feeAmount.toLocaleString('en-IN')}</div>
-                  </CardContent>
-                </Card>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="p-8">
+              {/* Application Summary */}
+              {applicationSummary && (
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold text-gray-800 mb-6">Application Summary</h3>
 
-                {/* EMI Plan */}
-                <Card className="border-2 border-indigo-100">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center">
-                      <CreditCard className="h-5 w-5 text-indigo-600 mr-2" />
-                      EMI Plan
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div><strong>Duration:</strong> {applicationSummary.emi.duration} months</div>
-                    <div><strong>Monthly EMI:</strong> ₹{applicationSummary.emi.monthlyAmount.toLocaleString('en-IN')}</div>
-                    <div><strong>Processing Fee:</strong> ₹{applicationSummary.emi.processingFee.toLocaleString('en-IN')}</div>
-                    <div><strong>Interest Rate:</strong> 0% (Zero Interest)</div>
-                    <div className="pt-2 border-t"><strong>Total Amount:</strong> ₹{applicationSummary.emi.totalAmount.toLocaleString('en-IN')}</div>
-                  </CardContent>
-                </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    {/* Student Details */}
+                    <Card className="border-2 border-blue-100">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center">
+                          <FileText className="h-5 w-5 text-blue-600 mr-2" />
+                          Student Details
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <div><strong>Name:</strong> {applicationSummary.student.name}</div>
+                        <div><strong>Institution:</strong> {applicationSummary.student.institution}</div>
+                        <div><strong>Class:</strong> {applicationSummary.student.class}</div>
+                        <div><strong>Fee Type:</strong> {applicationSummary.student.feeType}</div>
+                        <div><strong>Fee Amount:</strong> ₹{applicationSummary.student.feeAmount.toLocaleString('en-IN')}</div>
+                      </CardContent>
+                    </Card>
 
-                {/* Parent Details */}
-                <Card className="border-2 border-purple-100">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center">
-                      <Shield className="h-5 w-5 text-purple-600 mr-2" />
-                      Parent Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div><strong>Name:</strong> {applicationSummary.parent.name}</div>
-                    <div><strong>PAN:</strong> {applicationSummary.parent.pan}</div>
-                    <div><strong>Phone:</strong> {applicationSummary.parent.phone}</div>
-                    <div><strong>Email:</strong> {applicationSummary.parent.email}</div>
-                    <div><strong>Monthly Income:</strong> ₹{applicationSummary.parent.monthlyIncome}</div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          )}
+                    {/* EMI Plan */}
+                    <Card className="border-2 border-indigo-100">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center">
+                          <CreditCard className="h-5 w-5 text-indigo-600 mr-2" />
+                          EMI Plan
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <div><strong>Duration:</strong> {applicationSummary.emi.duration} months</div>
+                        <div><strong>Monthly EMI:</strong> ₹{applicationSummary.emi.monthlyAmount.toLocaleString('en-IN')}</div>
+                        <div><strong>Processing Fee:</strong> ₹{applicationSummary.emi.processingFee.toLocaleString('en-IN')}</div>
+                        <div><strong>Interest Rate:</strong> 0% (Zero Interest)</div>
+                        <div className="pt-2 border-t"><strong>Total Amount:</strong> ₹{applicationSummary.emi.totalAmount.toLocaleString('en-IN')}</div>
+                      </CardContent>
+                    </Card>
 
-          {/* Terms and Conditions */}
-          <div className="space-y-6">
-            <h3 className="text-xl font-bold text-gray-800">Terms & Conditions</h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="termsAccepted"
-                  checked={formData.termsAccepted}
-                  onCheckedChange={(checked) => handleConsentChange("termsAccepted", checked as boolean)}
-                  className="mt-1"
-                />
-                <label htmlFor="termsAccepted" className="text-sm text-gray-700 cursor-pointer">
-                  I have read and agree to the <a href="#" className="text-blue-600 underline">Terms and Conditions</a> and <a href="#" className="text-blue-600 underline">Loan Agreement</a> *
-                </label>
-              </div>
-
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="privacyAccepted"
-                  checked={formData.privacyAccepted}
-                  onCheckedChange={(checked) => handleConsentChange("privacyAccepted", checked as boolean)}
-                  className="mt-1"
-                />
-                <label htmlFor="privacyAccepted" className="text-sm text-gray-700 cursor-pointer">
-                  I accept the <a href="#" className="text-blue-600 underline">Privacy Policy</a> and consent to the collection and use of my personal information *
-                </label>
-              </div>
-
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="creditCheckConsent"
-                  checked={formData.creditCheckConsent}
-                  onCheckedChange={(checked) => handleConsentChange("creditCheckConsent", checked as boolean)}
-                  className="mt-1"
-                />
-                <label htmlFor="creditCheckConsent" className="text-sm text-gray-700 cursor-pointer">
-                  I authorize MyFee and its lending partners to perform credit checks, verify my information with credit bureaus, and process this loan application *
-                </label>
-              </div>
-
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="communicationConsent"
-                  checked={formData.communicationConsent}
-                  onCheckedChange={(checked) => handleConsentChange("communicationConsent", checked as boolean)}
-                  className="mt-1"
-                />
-                <label htmlFor="communicationConsent" className="text-sm text-gray-700 cursor-pointer">
-                  I agree to receive communications about my loan application, payment reminders, and promotional offers via SMS, email, and phone calls
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Important Information */}
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div className="flex items-start">
-              <CheckCircle className="w-6 h-6 text-blue-600 mt-1 mr-3 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-2">What happens after you submit?</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li><strong>Instant Processing:</strong> Your application will be processed immediately</li>
-                  <li><strong>Loan Approval:</strong> You'll receive approval notification within 5 minutes</li>
-                  <li><strong>Fee Payment:</strong> We'll pay the institution directly within 24 hours</li>
-                  <li><strong>EMI Schedule:</strong> Your EMI schedule will be sent to your registered email</li>
-                  <li><strong>Account Access:</strong> Full dashboard access to track payments and documents</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="bg-gray-50 px-8 py-6 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleSaveAndExit}
-              className="px-6"
-            >
-              Save & Continue Later
-            </Button>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleBack}
-            >
-              <svg className="mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={submitting || !formData.termsAccepted || !formData.privacyAccepted || !formData.creditCheckConsent}
-              className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 py-3 text-lg font-semibold shadow-lg transform transition duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-white"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Submitting Application...
-                </>
-              ) : (
-                <>
-                  Submit Application
-                  <CheckCircle className="ml-2 w-5 h-5" />
-                </>
+                    {/* Parent Details */}
+                    <Card className="border-2 border-purple-100">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center">
+                          <Shield className="h-5 w-5 text-purple-600 mr-2" />
+                          Parent Details
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <div><strong>Name:</strong> {applicationSummary.parent.name}</div>
+                        <div><strong>PAN:</strong> {applicationSummary.parent.pan}</div>
+                        <div><strong>Phone:</strong> {applicationSummary.parent.phone}</div>
+                        <div><strong>Email:</strong> {applicationSummary.parent.email}</div>
+                        {applicationSummary.parent.monthlyIncome && (
+                          <div><strong>Monthly Income:</strong> ₹{applicationSummary.parent.monthlyIncome}</div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
               )}
-            </Button>
-          </div>
-        </div>
+
+              {/* Terms and Conditions */}
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold text-gray-800">Terms & Conditions</h3>
+
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="termsAccepted"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-normal cursor-pointer">
+                            I have read and agree to the <a href="#" className="text-blue-600 underline">Terms and Conditions</a> and <a href="#" className="text-blue-600 underline">Loan Agreement</a> *
+                          </FormLabel>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="privacyAccepted"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-normal cursor-pointer">
+                            I accept the <a href="#" className="text-blue-600 underline">Privacy Policy</a> and consent to the collection and use of my personal information *
+                          </FormLabel>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="creditCheckConsent"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-normal cursor-pointer">
+                            I authorize MyFee and its lending partners to perform credit checks, verify my information with credit bureaus, and process this loan application *
+                          </FormLabel>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="communicationConsent"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-normal cursor-pointer">
+                            I agree to receive communications about my loan application, payment reminders, and promotional offers via SMS, email, and phone calls
+                          </FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Important Information */}
+              <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-blue-600 mt-1 mr-3 flex-shrink-0" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-2">What happens after you submit?</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li><strong>Instant Processing:</strong> Your application will be processed immediately</li>
+                      <li><strong>Loan Approval:</strong> You'll receive approval notification within 5 minutes</li>
+                      <li><strong>Fee Payment:</strong> We'll pay the institution directly within 24 hours</li>
+                      <li><strong>EMI Schedule:</strong> Your EMI schedule will be sent to your registered email</li>
+                      <li><strong>Account Access:</strong> Full dashboard access to track payments and documents</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="bg-gray-50 px-8 py-6 flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSaveAndExit}
+                  className="px-6"
+                >
+                  Save & Continue Later
+                </Button>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                >
+                  <svg className="mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!isValid || isSubmitting}
+                  className="bg-gradient-to-r from-green-600 to-teal-700 hover:from-green-700 hover:to-teal-800 px-8 py-3 text-lg font-semibold shadow-lg transform transition duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-white"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Submitting Application...
+                    </>
+                  ) : (
+                    <>
+                      Submit Application
+                      <CheckCircle className="ml-2 w-5 h-5" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </Form>
       </div>
     </div>
   );

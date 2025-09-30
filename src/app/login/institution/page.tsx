@@ -32,9 +32,45 @@ export default function InstitutionLogin() {
 
       if (result.error) {
         setError(result.error.message || "Login failed");
-      } else {
-        router.push("/institution/dashboard");
+        return;
       }
+
+      // Verify this user has organization membership (institution admin)
+      const session = await authClient.getSession();
+
+      if (session.data?.user.role === "admin") {
+        setError("Admin users should login via /admin/signin");
+        await authClient.signOut();
+        return;
+      }
+
+      // Check for organization membership
+      try {
+        const orgResponse = await fetch("/api/auth/organization/get-active-member", {
+          credentials: "include"
+        });
+
+        if (!orgResponse.ok) {
+          setError("This account is not associated with any institution. Institution admins only.");
+          await authClient.signOut();
+          return;
+        }
+
+        const orgData = await orgResponse.json();
+        if (!orgData) {
+          setError("This account is not associated with any institution. Institution admins only.");
+          await authClient.signOut();
+          return;
+        }
+      } catch (err) {
+        setError("This account is not associated with any institution. Institution admins only.");
+        await authClient.signOut();
+        return;
+      }
+
+      // Success - user is an institution admin
+      router.push("/institution/dashboard");
+      router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");
     } finally {

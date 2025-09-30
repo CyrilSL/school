@@ -86,17 +86,72 @@ export default async function ParentDashboard() {
     app.status === 'emi_pending' || app.status === 'onboarding_pending'
   ).length;
 
-  // Mock upcoming payments (EMI data)
-  const upcomingPayments = [
-    { date: "15 Oct 2025", amount: 15000, institution: applications[0]?.institution || "Institution", status: "upcoming" },
-    { date: "15 Nov 2025", amount: 15000, institution: applications[0]?.institution || "Institution", status: "scheduled" },
-  ];
+  // Fetch real upcoming payments (EMI installments)
+  let upcomingPayments: { date: string; amount: number; institution: string; status: string; applicationId: string }[] = [];
 
-  // Mock recent transactions
-  const recentTransactions = [
-    { id: "TXN001", date: "28 Sep 2025", amount: 15000, type: "EMI Payment", status: "completed" },
-    { id: "TXN002", date: "15 Sep 2025", amount: 15000, type: "EMI Payment", status: "completed" },
-  ];
+  // Get pending installments for the first application (or all applications)
+  if (applications.length > 0) {
+    try {
+      const headersList = await headers();
+      const host = headersList.get('host') || 'localhost:3000';
+      const protocol = host.includes('localhost') ? 'http' : 'https';
+      const cookie = headersList.get('cookie') || '';
+
+      // Fetch installments for all applications
+      for (const app of applications.slice(0, 2)) { // Get first 2 apps to show upcoming payments
+        const installmentsResponse = await fetch(
+          `${protocol}://${host}/api/parent/payment/emi?feeApplicationId=${app.id}`,
+          { headers: { 'Cookie': cookie } }
+        );
+
+        if (installmentsResponse.ok) {
+          const data = await installmentsResponse.json();
+          const pendingInstallments = (data.installments || [])
+            .filter((inst: any) => inst.status === 'pending')
+            .slice(0, 2) // Get first 2 pending installments
+            .map((inst: any) => ({
+              date: new Date(inst.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+              amount: parseFloat(inst.amount),
+              institution: app.institution,
+              status: new Date(inst.dueDate) < new Date() ? 'overdue' : 'upcoming',
+              applicationId: app.id,
+            }));
+          upcomingPayments.push(...pendingInstallments);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching upcoming payments:', error);
+    }
+  }
+
+  // Fetch real recent transactions
+  let recentTransactions: { id: string; date: string; amount: number; type: string; status: string }[] = [];
+  try {
+    const headersList = await headers();
+    const host = headersList.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const cookie = headersList.get('cookie') || '';
+
+    const transactionsResponse = await fetch(`${protocol}://${host}/api/parent/transactions`, {
+      headers: { 'Cookie': cookie },
+    });
+
+    if (transactionsResponse.ok) {
+      const data = await transactionsResponse.json();
+      recentTransactions = (data.transactions || [])
+        .filter((txn: any) => txn.status === 'paid')
+        .slice(0, 2) // Get last 2 completed payments
+        .map((txn: any) => ({
+          id: txn.id,
+          date: new Date(txn.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+          amount: txn.amount,
+          type: txn.description,
+          status: 'completed',
+        }));
+    }
+  } catch (error) {
+    console.error('Error fetching recent transactions:', error);
+  }
 
   return (
     <div className="w-full max-w-7xl mx-auto">

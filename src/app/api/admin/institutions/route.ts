@@ -111,19 +111,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Auto-verify the email for admin-created users
-    if (newUser && !userError) {
-      try {
-        await fetch(`${process.env.BETTER_AUTH_URL}/api/auth/verify-demo`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: adminEmail })
-        });
-        console.log("Auto-verified admin user email:", adminEmail);
-      } catch (verifyError) {
-        console.warn("Failed to auto-verify admin email:", verifyError);
-      }
-    }
+    // Note: Email verification is handled by Better Auth during signup
 
     if (userError) {
       console.error("Failed to create admin user:", userError);

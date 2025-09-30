@@ -65,31 +65,34 @@ interface EditInstitutionSheetProps {
 export default function EditInstitutionSheet({ institution, open, onOpenChange }: EditInstitutionSheetProps) {
   const { toast } = useToast();
 
-  const handleVerifyEmail = async (email: string) => {
-    if (!email || !email.includes('@')) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+
+  const handleVerifyEmail = async () => {
+    if (!formData.adminEmail || !formData.adminEmail.includes('@')) {
       toast({
         title: "Invalid email",
-        description: "Please enter a valid email address first",
+        description: "Please enter a valid admin email first",
         variant: "destructive"
       });
       return;
     }
 
-    setVerifyingEmail(email);
+    setVerifyingEmail(true);
     try {
       const response = await fetch("/api/auth/verify-demo", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.adminEmail }),
       });
 
       if (response.ok) {
-        setVerificationStatus(prev => ({ ...prev, [email]: true }));
+        setEmailVerified(true);
         toast({
           title: "Email verified",
-          description: `${email} has been verified successfully`,
+          description: `${formData.adminEmail} has been verified successfully`,
         });
       } else {
         throw new Error("Verification failed");
@@ -97,17 +100,13 @@ export default function EditInstitutionSheet({ institution, open, onOpenChange }
     } catch (error) {
       toast({
         title: "Verification failed",
-        description: "Failed to verify email. Please try again.",
+        description: "Failed to verify email. Make sure the user exists.",
         variant: "destructive"
       });
     } finally {
-      setVerifyingEmail(null);
+      setVerifyingEmail(false);
     }
   };
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState<{ [email: string]: boolean }>({});
-  const [verifyingEmail, setVerifyingEmail] = useState<string | null>(null);
   const [formData, setFormData] = useState<InstitutionData>({
     name: "",
     type: "",
@@ -510,34 +509,32 @@ export default function EditInstitutionSheet({ institution, open, onOpenChange }
                     <p className="text-sm text-gray-500">
                       This email will be used to log into the institution dashboard
                     </p>
-                    {formData.adminEmail && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleVerifyEmail(formData.adminEmail)}
-                        disabled={verifyingEmail === formData.adminEmail || verificationStatus[formData.adminEmail]}
-                        className="ml-2"
-                      >
-                        {verifyingEmail === formData.adminEmail ? (
-                          <>
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
-                            Verifying...
-                          </>
-                        ) : verificationStatus[formData.adminEmail] ? (
-                          <>
-                            <svg className="w-3 h-3 text-green-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            Verified
-                          </>
-                        ) : (
-                          "Verify Email"
-                        )}
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleVerifyEmail}
+                      disabled={verifyingEmail || emailVerified || !formData.adminEmail}
+                      className="ml-2"
+                    >
+                      {verifyingEmail ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
+                          Verifying...
+                        </>
+                      ) : emailVerified ? (
+                        <>
+                          <svg className="w-3 h-3 text-green-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Verified
+                        </>
+                      ) : (
+                        "Verify Email"
+                      )}
+                    </Button>
                   </div>
-                  {verificationStatus[formData.adminEmail] && (
+                  {emailVerified && (
                     <p className="text-sm text-green-600 mt-1">
                       ✓ Email verified - admin can log in immediately
                     </p>

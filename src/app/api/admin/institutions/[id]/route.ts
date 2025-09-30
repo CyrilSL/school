@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession, auth } from "~/server/auth";
 import { db } from "~/server/db";
-import { institution, user, account, member } from "~/server/db/schema";
+import { institution, user, account, member, session } from "~/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -129,81 +129,54 @@ export async function PUT(
       .where(eq(member.organizationId, organizationId));
 
       if (existingMembers.length > 0) {
-        // Update existing admin user
+        // Update existing admin user credentials
         const existingMember = existingMembers[0]!;
         console.log(`Updating credentials for user: ${existingMember.userEmail} (ID: ${existingMember.userId})`);
 
-        // Delete the existing user to recreate with new credentials
-        // First delete the member relationship
-        await db.delete(member)
-          .where(and(
-            eq(member.organizationId, organizationId),
-            eq(member.userId, existingMember.userId)
-          ));
-
-        // Delete user accounts
-        await db.delete(account)
-          .where(eq(account.userId, existingMember.userId));
-
-        // Delete the user
-        await db.delete(user)
-          .where(eq(user.id, existingMember.userId));
-
-        console.log("Deleted existing user and accounts");
-
-        // Create new user with Better Auth
-        const { data: newUser, error: userError } = await auth.api.signUpEmail({
+        // Use Better Auth API to update user credentials
+        const { error: updateError } = await auth.api.updateUser({
           body: {
             name: adminName,
             email: adminEmail,
-            password: adminPassword,
+          },
+          query: {
+            userId: existingMember.userId,
           }
         });
 
-        // Auto-verify the email for admin-created users
-        if (newUser && !userError) {
-          try {
-            await fetch(`${process.env.BETTER_AUTH_URL}/api/auth/verify-demo`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: adminEmail })
-            });
-            console.log("Auto-verified updated admin user email:", adminEmail);
-          } catch (verifyError) {
-            console.warn("Failed to auto-verify admin email:", verifyError);
-          }
-        }
-
-        if (userError) {
-          console.error("Failed to create new admin user:", userError);
+        if (updateError) {
+          console.error("Failed to update admin user:", updateError);
           return NextResponse.json(
-            { error: "Failed to update admin user: " + userError.message },
+            { error: "Failed to update admin user: " + updateError.message },
             { status: 500 }
           );
         }
 
-        if (!newUser) {
+        // Update password if provided
+        const { error: passwordError } = await auth.api.changePassword({
+          body: {
+            newPassword: adminPassword,
+            currentPassword: "", // Admin override - we don't need current password
+          },
+          query: {
+            userId: existingMember.userId,
+          }
+        });
+
+        if (passwordError) {
+          console.error("Failed to update admin password:", passwordError);
           return NextResponse.json(
-            { error: "Failed to create new admin user: no user returned" },
+            { error: "Failed to update admin password: " + passwordError.message },
             { status: 500 }
           );
         }
 
-        // Add new user as member of the organization
-        await db.insert(member).values({
-          id: nanoid(),
-          organizationId: organizationId,
-          userId: newUser.id,
-          role: "admin",
-          createdAt: new Date(),
-        });
-
-        console.log("Created new user via Better Auth:", newUser.email);
+        console.log("Updated user credentials via Better Auth:", adminEmail);
 
         adminUserInfo = {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
+          id: existingMember.userId,
+          name: adminName,
+          email: adminEmail,
           action: "updated"
         };
       } else {
@@ -215,20 +188,6 @@ export async function PUT(
             password: adminPassword,
           }
         });
-
-        // Auto-verify the email for admin-created users
-        if (newUser && !userError) {
-          try {
-            await fetch(`${process.env.BETTER_AUTH_URL}/api/auth/verify-demo`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: adminEmail })
-            });
-            console.log("Auto-verified new admin user email:", adminEmail);
-          } catch (verifyError) {
-            console.warn("Failed to auto-verify admin email:", verifyError);
-          }
-        }
 
         if (userError) {
           console.error("Failed to create admin user:", userError);

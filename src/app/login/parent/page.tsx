@@ -32,9 +32,39 @@ export default function ParentLogin() {
 
       if (result.error) {
         setError(result.error.message || "Login failed");
-      } else {
-        router.push("/parent/dashboard");
+        return;
       }
+
+      // Verify this user is a parent (not admin, not institution)
+      const session = await authClient.getSession();
+
+      if (session.data?.user.role === "admin") {
+        setError("Admin users should login via /admin/signin");
+        await authClient.signOut();
+        return;
+      }
+
+      // Check if user has organization membership (institution admin)
+      try {
+        const orgResponse = await fetch("/api/auth/organization/get-active-member", {
+          credentials: "include"
+        });
+
+        if (orgResponse.ok) {
+          const orgData = await orgResponse.json();
+          if (orgData) {
+            setError("Institution admins should login via /login/institution");
+            await authClient.signOut();
+            return;
+          }
+        }
+      } catch (err) {
+        // No org membership - this is fine for parents
+      }
+
+      // Success - user is a parent
+      router.push("/parent/dashboard");
+      router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");
     } finally {

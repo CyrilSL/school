@@ -115,10 +115,33 @@ export default async function authMiddleware(request: NextRequest) {
       );
 
       if (!activeMember) {
-        return NextResponse.redirect(new URL("/parent/dashboard", request.url));
+        return NextResponse.redirect(new URL("/login/institution", request.url));
       }
     } catch (error) {
-      return NextResponse.redirect(new URL("/parent/dashboard", request.url));
+      return NextResponse.redirect(new URL("/login/institution", request.url));
+    }
+  }
+
+  // Check that parents don't access institution routes
+  if (isProtectedParentRoute) {
+    try {
+      // Check if user has organization membership (which would make them institution admin)
+      const { data: activeMember } = await betterFetch(
+        "/api/auth/organization/get-active-member",
+        {
+          baseURL: env.BETTER_AUTH_URL,
+          headers: {
+            cookie: request.headers.get("cookie") ?? "",
+          },
+        },
+      );
+
+      // If they have organization membership, redirect to institution dashboard
+      if (activeMember) {
+        return NextResponse.redirect(new URL("/institution/dashboard", request.url));
+      }
+    } catch (error) {
+      // No org membership - this is fine for parents, continue
     }
   }
 

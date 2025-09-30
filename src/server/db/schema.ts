@@ -17,7 +17,7 @@ import {
 /**
  * Fee management system schema
  */
-export const createTable = pgTableCreator((name) => `t3_better_auth_${name}`);
+export const createTable = pgTableCreator((name) => name);
 
 export const posts = createTable(
   "post",

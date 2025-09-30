@@ -8,7 +8,7 @@ import {
   sendVerificationEmail,
 } from "~/server/auth/email";
 import { db } from "~/server/db";
-import { member } from "~/server/db/schema";
+import { member, user, session, account, verification } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 
 export const auth = betterAuth({
@@ -28,9 +28,26 @@ export const auth = betterAuth({
     }),
   ],
   databaseHooks: {
+    account: {
+      create: {
+        before: async (account) => {
+          console.log("🔍 [DEBUG] Account CREATE hook - before:", account);
+          return { data: account };
+        },
+      },
+    },
+    user: {
+      create: {
+        before: async (user) => {
+          console.log("🔍 [DEBUG] User CREATE hook - before:", user);
+          return { data: user };
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {
+          console.log("🔍 [DEBUG] Session CREATE hook - before:", session);
           try {
             // Check if user has organization membership
             const membership = await db

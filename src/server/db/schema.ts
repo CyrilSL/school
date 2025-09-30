@@ -17,7 +17,7 @@ import {
 /**
  * Fee management system schema
  */
-export const createTable = pgTableCreator((name) => name);
+export const createTable = pgTableCreator((name) => `t3_better_auth_${name}`);
 
 export const posts = createTable(
   "post",
@@ -296,7 +296,40 @@ export const installment = createTable("installment", {
   dueDate: timestamp("due_date").notNull(),
   paidDate: timestamp("paid_date"),
   status: text("status").notNull().default("pending"), // 'pending', 'paid', 'overdue'
-  paymentId: text("payment_id"), // Reference to payment gateway transaction
+  paymentId: text("payment_id"), // Reference to payment transaction
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date(),
+  ),
+});
+
+// Payment table - tracks all payments in the system
+export const payment = createTable("payment", {
+  id: text("id").primaryKey(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentType: text("payment_type").notNull(), // 'institution_payment' (parent -> platform), 'emi_payment' (parent -> loan_provider), 'platform_to_institution'
+  paymentMethod: text("payment_method").notNull().default("mock_payment"), // 'mock_payment', 'upi', 'card', 'bank_transfer'
+  status: text("status").notNull().default("pending"), // 'pending', 'processing', 'completed', 'failed'
+
+  // References
+  userId: text("user_id").references(() => user.id), // Who made the payment
+  feeApplicationId: text("fee_application_id").references(() => feeApplication.id),
+  installmentId: text("installment_id").references(() => installment.id), // For EMI payments
+  institutionId: text("institution_id").references(() => institution.id), // For institution payments
+
+  // Payment details
+  transactionId: text("transaction_id"), // Mock transaction ID
+  paymentGateway: text("payment_gateway").default("mock_gateway"),
+  paymentDate: timestamp("payment_date"),
+
+  // Additional info
+  notes: text("notes"),
+  metadata: json("metadata").$type<{
+    processingFee?: number;
+    emiDuration?: number;
+    emiMonthlyAmount?: number;
+  }>(),
+
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
     () => new Date(),

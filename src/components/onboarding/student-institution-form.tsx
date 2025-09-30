@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { useToast } from "~/hooks/use-toast";
-import { Loader2, Search, MapPin, BookOpen, Calendar, User, DollarSign, ChevronDown } from "lucide-react";
+import { Loader2, MapPin, Calendar, User, DollarSign, ChevronDown } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "~/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 
@@ -342,7 +342,6 @@ export default function StudentInstitutionForm() {
               {/* Institution Details */}
               <div className="space-y-6">
                 <div className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
-                  <Search className="h-5 w-5 text-blue-600" />
                   <span>Where does the student study?</span>
                 </div>
 
@@ -360,9 +359,8 @@ export default function StudentInstitutionForm() {
                                 variant="outline"
                                 role="combobox"
                                 aria-expanded={institutionOpen}
-                                className="h-12 w-full justify-between pl-10 text-left font-normal"
+                                className="h-12 w-full justify-between text-left font-normal"
                               >
-                                <Search className="absolute left-3 h-4 w-4 text-gray-400" />
                                 {field.value || "Select institution..."}
                                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
@@ -466,8 +464,7 @@ export default function StudentInstitutionForm() {
                       <FormItem>
                         <FormLabel>Select Board / Stream</FormLabel>
                         {availableBoards.length === 1 ? (
-                          <div className="h-12 w-full border border-gray-200 rounded-md flex items-center pl-10 bg-gray-50">
-                            <BookOpen className="absolute left-3 h-4 w-4 text-gray-400" />
+                          <div className="h-12 w-full border border-gray-200 rounded-md flex items-center px-3 bg-gray-50">
                             <div className="font-medium text-gray-900">{field.value}</div>
                           </div>
                         ) : (
@@ -479,9 +476,8 @@ export default function StudentInstitutionForm() {
                                   role="combobox"
                                   aria-expanded={boardOpen}
                                   disabled={!location || availableBoards.length === 0}
-                                  className="h-12 w-full justify-between pl-10 text-left font-normal disabled:opacity-50"
+                                  className="h-12 w-full justify-between text-left font-normal disabled:opacity-50"
                                 >
-                                  <BookOpen className="absolute left-3 h-4 w-4 text-gray-400" />
                                   {field.value || "Select board..."}
                                   <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>

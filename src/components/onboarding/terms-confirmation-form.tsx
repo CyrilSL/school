@@ -228,6 +228,7 @@ export default function TermsConfirmationForm() {
 
       console.log('[onboarding] Submitting payload', payload);
 
+      // Step 1: Submit application
       const response = await fetch("/api/parent/apply", {
         method: "POST",
         headers: {
@@ -242,6 +243,31 @@ export default function TermsConfirmationForm() {
         throw new Error(errorData.error || "Failed to submit application");
       }
 
+      const applicationData = await response.json();
+      const feeApplicationId = applicationData.applicationId || applicationData.id;
+
+      // Step 2: Initiate payment
+      toast({
+        title: "Processing payment...",
+        description: "Please wait while we process your payment.",
+      });
+
+      const paymentResponse = await fetch("/api/parent/payment/initiate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ feeApplicationId }),
+      });
+
+      if (!paymentResponse.ok) {
+        const errorData = await paymentResponse.json();
+        console.error('[payment] Server error response:', errorData);
+        throw new Error(errorData.error || "Failed to process payment");
+      }
+
+      const paymentData = await paymentResponse.json();
+
       // Clear saved data
       localStorage.removeItem('onboarding-student-details');
       localStorage.removeItem('onboarding-student-institution');
@@ -252,8 +278,8 @@ export default function TermsConfirmationForm() {
       localStorage.removeItem('onboarding-terms-confirmation');
 
       toast({
-        title: "🎉 Application Submitted Successfully!",
-        description: "Your loan application has been submitted and is being processed.",
+        title: "🎉 Payment Successful!",
+        description: `Application submitted and payment processed. Transaction ID: ${paymentData.data.transactionId}`,
       });
 
       // Redirect to success/dashboard page

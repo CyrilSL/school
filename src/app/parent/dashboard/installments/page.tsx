@@ -55,18 +55,35 @@ export default function InstallmentsPage() {
           return;
         }
 
-        const response = await fetch(`/api/fees/installments?applicationId=${applicationId}`);
+        const response = await fetch(`/api/parent/payment/emi?feeApplicationId=${applicationId}`);
         if (response.ok) {
           const data = await response.json();
           setInstallments(data.installments || []);
         }
 
         // Get application details from the applications API
-        const appResponse = await fetch("/api/fees/applications");
+        const appResponse = await fetch("/api/parent/applications");
         if (appResponse.ok) {
           const appData = await appResponse.json();
-          const app = appData.applications.find((a: FeeApplication) => a.id === applicationId);
-          setApplication(app || null);
+          const app = appData.applications.find((a: any) => a.id === applicationId);
+          if (app) {
+            // Transform to match the FeeApplication interface
+            setApplication({
+              id: app.id,
+              totalAmount: app.totalFees?.toString() || "0",
+              remainingAmount: "0", // Will be calculated
+              monthlyInstallment: "0",
+              status: app.status,
+              feeStructure: {
+                name: app.institution || "Fee",
+                academicYear: app.academicYear || "2025-26",
+              },
+              emiPlan: app.emiPlan || {
+                name: "EMI Plan",
+                installments: 6,
+              },
+            });
+          }
         }
       } catch (error) {
         console.error("Error fetching installments:", error);
@@ -78,17 +95,46 @@ export default function InstallmentsPage() {
     fetchData();
   }, [applicationId]);
 
-  const handlePayInstallment = (installment: Installment) => {
-    setSelectedInstallment(installment);
-    setShowPaymentModal(true);
+  const handlePayInstallment = async (installment: Installment) => {
+    setPayingInstallment(installment.id);
+
+    try {
+      const response = await fetch("/api/parent/payment/emi", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ installmentId: installment.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Payment failed");
+      }
+
+      const data = await response.json();
+      alert(`Payment successful! Transaction ID: ${data.data.transactionId}`);
+
+      // Refresh installments
+      const refreshResponse = await fetch(`/api/parent/payment/emi?feeApplicationId=${applicationId}`);
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        setInstallments(refreshData.installments || []);
+      }
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      alert(error instanceof Error ? error.message : "Failed to process payment");
+    } finally {
+      setPayingInstallment(null);
+    }
   };
 
   const handlePaymentSuccess = async (paymentId: string) => {
     alert(`Payment successful! Payment ID: ${paymentId}`);
-    
+
     // Refresh installments
     try {
-      const refreshResponse = await fetch(`/api/fees/installments?applicationId=${applicationId}`);
+      const refreshResponse = await fetch(`/api/parent/payment/emi?feeApplicationId=${applicationId}`);
       if (refreshResponse.ok) {
         const data = await refreshResponse.json();
         setInstallments(data.installments || []);
@@ -239,8 +285,9 @@ export default function InstallmentsPage() {
                             size="sm"
                             onClick={() => handlePayInstallment(installment)}
                             className={status === "overdue" ? "bg-red-600 hover:bg-red-700" : ""}
+                            disabled={payingInstallment === installment.id}
                           >
-                            Pay Now
+                            {payingInstallment === installment.id ? "Processing..." : "Pay Now"}
                           </Button>
                         )}
                         {installment.status === "paid" && installment.paymentId && (

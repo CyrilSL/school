@@ -202,8 +202,9 @@ export default function StudentInstitutionForm() {
 
     const filtered = institutions.filter(institution =>
       institution.name.toLowerCase().includes(institutionSearch.toLowerCase()) ||
-      institution.city.toLowerCase().includes(institutionSearch.toLowerCase()) ||
-      (institution.board && institution.board.toLowerCase().includes(institutionSearch.toLowerCase()))
+      institution.type.toLowerCase().includes(institutionSearch.toLowerCase()) ||
+      (institution.cities && institution.cities.some(city => city.toLowerCase().includes(institutionSearch.toLowerCase()))) ||
+      (institution.boards && institution.boards.some(board => board.toLowerCase().includes(institutionSearch.toLowerCase())))
     );
     setFilteredInstitutions(filtered);
   }, [institutionSearch, institutions]);

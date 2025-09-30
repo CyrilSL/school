@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { LogOut } from "lucide-react";
 import { authClient } from "~/server/auth/client";
 
@@ -38,7 +39,16 @@ export default function DashboardNavbar() {
     <nav className="border-b bg-white">
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center space-x-8">
-          <h1 className="text-xl font-semibold text-blue-600">MyFee</h1>
+          <Link href="/" className="flex items-center space-x-2">
+            <Image
+              src="/logo.png"
+              alt="MyFee Logo"
+              width={32}
+              height={32}
+              className="h-8 w-8"
+            />
+            <h1 className="text-xl font-semibold text-blue-600">MyFee</h1>
+          </Link>
           <div className="flex space-x-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;

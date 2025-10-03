@@ -1,82 +1,111 @@
-import { redirect } from "next/navigation";
-import { getServerSession } from "~/server/auth";
-import { headers } from "next/headers";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { authClient } from "~/server/auth/client";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 
-export default async function ApplicationDetailsPage(context: { params: Promise<{ id: string }> }) {
-  const params = await context.params;
-  const session = await getServerSession();
+export default function ApplicationDetailsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [application, setApplication] = useState<any>(null);
+  const [installments, setInstallments] = useState<any[]>([]);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [payingInstallment, setPayingInstallment] = useState<string | null>(null);
 
-  if (!session?.user) {
-    redirect("/login/parent");
-  }
+  useEffect(() => {
+    console.log('Component mounted, fetching data...');
+    fetchData();
+  }, []);
 
-  // Check onboarding completion
-  let onboardingProgress = null;
-  try {
-    const headersList = await headers();
-    const host = headersList.get('host') || 'localhost:3000';
-    const protocol = host.includes('localhost') ? 'http' : 'https';
-    const cookie = headersList.get('cookie') || '';
+  const fetchData = async () => {
+    try {
+      setLoading(true);
 
-    const progressResponse = await fetch(`${protocol}://${host}/api/parent/apply/partial`, {
-      headers: {
-        'Cookie': cookie,
-      },
-    });
+      // Get application data
+      console.log('Fetching application:', params.id);
+      const appRes = await fetch(`/api/fees/applications/${params.id}`);
+      console.log('Application response status:', appRes.status);
 
-    if (progressResponse.ok) {
-      onboardingProgress = await progressResponse.json();
-    }
-  } catch (error) {
-    console.error('Error fetching onboarding progress:', error);
-  }
-
-  // If onboarding is not completed, redirect to onboarding
-  if (!onboardingProgress?.isCompleted) {
-    const nextStep = onboardingProgress?.nextStep || 1;
-    redirect(`/parent/apply/steps/${nextStep}`);
-  }
-
-
-  // Get application details from backend API (SSR, use fetch)
-  let application = null;
-  let installments = [];
-  let fetchError = null;
-  try {
-    // Get application data
-    const headersList = await headers();
-    const host = headersList.get('host') || 'localhost:3000';
-    const protocol = host.includes('localhost') ? 'http' : 'https';
-    const cookie = headersList.get('cookie') || '';
-
-    // Fee application by id for this parent (with relations)
-    const appRes = await fetch(
-      `${protocol}://${host}/api/fees/applications/${params.id}`,
-      { headers: { 'Cookie': cookie }, cache: 'no-store' } // SSR only
-    );
-    if (appRes.ok) {
-      application = await appRes.json();
-    } else {
-      fetchError = 'Unable to fetch application data.';
-    }
-
-    // Get installments if application found
-    if (application && application.id) {
-      const insRes = await fetch(
-        `${protocol}://${host}/api/fees/installments?applicationId=${application.id}`,
-        { headers: { 'Cookie': cookie }, cache: 'no-store' }
-      );
-      if (insRes.ok) {
-        const insJson = await insRes.json();
-        installments = insJson.installments || [];
+      if (appRes.status === 401 || appRes.status === 403) {
+        console.log('Unauthorized, redirecting to login');
+        router.push("/login/parent");
+        return;
       }
+
+      if (appRes.ok) {
+        const appData = await appRes.json();
+        console.log('Application data:', appData);
+        setApplication(appData);
+
+        // Get installments if application found
+        if (appData?.id) {
+          const insRes = await fetch(`/api/fees/installments?applicationId=${appData.id}`);
+          console.log('Installments response status:', insRes.status);
+
+          if (insRes.ok) {
+            const insJson = await insRes.json();
+            console.log('Installments data:', insJson);
+            setInstallments(insJson.installments || []);
+          }
+        }
+      } else {
+        const errorText = await appRes.text();
+        console.error('Application fetch error:', errorText);
+        setFetchError('Unable to fetch application data.');
+      }
+    } catch (err) {
+      console.error('Fetch error', err);
+      setFetchError('Server error fetching data.');
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error('Fetch error', err);
-    fetchError = 'Server error fetching data.';
+  };
+
+  const handlePayInstallment = async (installmentId: string) => {
+    setPayingInstallment(installmentId);
+
+    try {
+      const response = await fetch("/api/parent/payment/emi", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ installmentId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Payment failed");
+      }
+
+      const data = await response.json();
+      alert(`Payment successful! Transaction ID: ${data.data.transactionId}`);
+
+      // Refresh data
+      await fetchData();
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      alert(error instanceof Error ? error.message : "Failed to process payment");
+    } finally {
+      setPayingInstallment(null);
+    }
+  };
+
+  const isOverdue = (dueDate: string, status: string) => {
+    if (status === "paid") return false;
+    return new Date(dueDate) < new Date();
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-12 text-center">
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   if (fetchError) {
@@ -87,6 +116,7 @@ export default async function ApplicationDetailsPage(context: { params: Promise<
       </div>
     );
   }
+
   if (!application) {
     return (
       <div className="max-w-4xl mx-auto p-12 text-center">
@@ -112,6 +142,14 @@ export default async function ApplicationDetailsPage(context: { params: Promise<
     }
   };
 
+  const totalPaid = installments
+    .filter(i => i.status === "paid")
+    .reduce((sum, i) => sum + parseFloat(i.amount || "0"), 0);
+
+  const remainingAmount = parseFloat(application.totalAmount || "0") - totalPaid;
+  const paidCount = installments.filter(i => i.status === "paid").length;
+  const pendingCount = installments.filter(i => i.status === "pending").length;
+
   return (
     <div className="max-w-6xl">
       <div className="mb-8">
@@ -124,6 +162,37 @@ export default async function ApplicationDetailsPage(context: { params: Promise<
             {application.status === "emi_pending" ? "EMI Setup Required" : "In Progress"}
           </Badge>
         </div>
+      </div>
+
+      {/* Payment Summary Cards */}
+      <div className="grid gap-6 md:grid-cols-4 mb-6">
+        <Card className="border-l-4 border-l-blue-600">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Total Amount</div>
+            <div className="text-2xl font-bold">₹{Number(application.totalAmount || 0).toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-green-600">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Amount Paid</div>
+            <div className="text-2xl font-bold text-green-600">₹{totalPaid.toLocaleString()}</div>
+            <div className="text-xs text-gray-500 mt-1">{paidCount} installments</div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-orange-600">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Remaining</div>
+            <div className="text-2xl font-bold text-orange-600">₹{remainingAmount.toLocaleString()}</div>
+            <div className="text-xs text-gray-500 mt-1">{pendingCount} installments</div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-purple-600">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Progress</div>
+            <div className="text-2xl font-bold">{Math.round((totalPaid / parseFloat(application.totalAmount || "1")) * 100)}%</div>
+            <div className="text-xs text-gray-500 mt-1">{paidCount}/{installments.length} paid</div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -207,28 +276,83 @@ export default async function ApplicationDetailsPage(context: { params: Promise<
         </Card>
 
         {/* Payment Schedule */}
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Payment Schedule</CardTitle>
+            <CardTitle>Payment Schedule & Installments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {installments.map((installment: any, index: number) => (
-                <div key={index} className="flex justify-between items-center p-3 border rounded">
-                  <div>
-                    <div className="font-medium text-sm">Installment {index + 1}</div>
-                    <div className="text-xs text-gray-500">Due: {installment.dueDate ? new Date(installment.dueDate).toLocaleDateString() : '-'}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-medium">₹{installment.amount ? Number(installment.amount).toLocaleString() : '-'}</div>
-                    <Badge className={getStatusColor(installment.status || 'pending')}>
-                      {(installment.status || 'pending').charAt(0).toUpperCase() + (installment.status || 'pending').slice(1)}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Installment
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Due Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {installments.map((installment: any, index: number) => {
+                    const status = installment.status === "pending" && isOverdue(installment.dueDate, installment.status)
+                      ? "overdue"
+                      : installment.status;
+
+                    return (
+                      <tr key={installment.id || index}>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          #{installment.installmentNumber || index + 1}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                          ₹{installment.amount ? Number(installment.amount).toLocaleString() : '-'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {installment.dueDate ? new Date(installment.dueDate).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <Badge className={getStatusColor(status)}>
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </Badge>
+                          {installment.paidDate && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Paid: {new Date(installment.paidDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                          {installment.status === "pending" && (
+                            <Button
+                              size="sm"
+                              onClick={() => handlePayInstallment(installment.id)}
+                              className={status === "overdue" ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}
+                              disabled={payingInstallment === installment.id}
+                            >
+                              {payingInstallment === installment.id ? "Processing..." : "Pay Now"}
+                            </Button>
+                          )}
+                          {installment.status === "paid" && installment.paymentId && (
+                            <div className="text-xs text-gray-500">
+                              Payment ID: {installment.paymentId}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
               {installments.length === 0 && (
-                <div className="text-center text-gray-500 py-4">
+                <div className="text-center text-gray-500 py-8">
                   No payment schedule available
                 </div>
               )}

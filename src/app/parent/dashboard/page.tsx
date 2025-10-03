@@ -247,35 +247,45 @@ export default async function ParentDashboard() {
                 <Calendar className="h-5 w-5 text-blue-600" />
                 Upcoming Payments
               </CardTitle>
-              <Button variant="ghost" size="sm" asChild>
-                <a href="/parent/dashboard/installments" className="text-blue-600 hover:text-blue-700">
-                  View All <ArrowRight className="h-4 w-4 ml-1" />
-                </a>
-              </Button>
+              {applications.length > 0 && (
+                <Button variant="ghost" size="sm" asChild>
+                  <a href={`/parent/dashboard/applications/${applications[0]?.id}`} className="text-blue-600 hover:text-blue-700">
+                    View All <ArrowRight className="h-4 w-4 ml-1" />
+                  </a>
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
-              {upcomingPayments.map((payment, index) => (
-                <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <CreditCard className="h-5 w-5 text-blue-600" />
+            {upcomingPayments.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingPayments.map((payment, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <CreditCard className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{payment.institution}</p>
+                        <p className="text-sm text-gray-600">Due: {payment.date}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{payment.institution}</p>
-                      <p className="text-sm text-gray-600">Due: {payment.date}</p>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">₹{payment.amount.toLocaleString()}</p>
+                      <Badge variant="outline" className={`text-xs ${payment.status === 'overdue' ? 'border-red-500 text-red-700' : 'border-blue-500 text-blue-700'}`}>
+                        {payment.status}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">₹{payment.amount.toLocaleString()}</p>
-                    <Badge variant="outline" className="text-xs">
-                      {payment.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <CreditCard className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                <p className="font-medium">No upcoming payments</p>
+                <p className="text-sm mt-1">All installments are up to date</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -292,12 +302,14 @@ export default async function ParentDashboard() {
                   View Transactions
                 </a>
               </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a href={`/parent/dashboard/installments?applicationId=${applications[0]?.id || ""}`}>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  EMI Schedule
-                </a>
-              </Button>
+              {applications.length > 0 && (
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href={`/parent/dashboard/applications/${applications[0]?.id}`}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    EMI Schedule
+                  </a>
+                </Button>
+              )}
               <Button variant="outline" className="w-full justify-start" asChild>
                 <a href="/parent/apply">
                   <FileText className="h-4 w-4 mr-2" />
@@ -329,27 +341,35 @@ export default async function ParentDashboard() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y">
-            {recentTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+          {recentTransactions.length > 0 ? (
+            <div className="divide-y">
+              {recentTransactions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{transaction.type}</p>
+                      <p className="text-sm text-gray-600">ID: {transaction.id} • {transaction.date}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{transaction.type}</p>
-                    <p className="text-sm text-gray-600">ID: {transaction.id} • {transaction.date}</p>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">₹{transaction.amount.toLocaleString()}</p>
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      {transaction.status}
+                    </Badge>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900">₹{transaction.amount.toLocaleString()}</p>
-                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                    {transaction.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <Receipt className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+              <p className="font-medium">No recent transactions</p>
+              <p className="text-sm mt-1">Your payment history will appear here</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -430,31 +450,6 @@ export default async function ParentDashboard() {
           </Card>
         ))}
       </div>
-
-      {/* Help Section */}
-      <Card className="mt-8 bg-blue-50 border-blue-200">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-              <HelpCircle className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-1">Need Help?</h3>
-              <p className="text-sm text-gray-700 mb-3">
-                Our support team is available 24/7 to assist you with any questions about your applications or EMI payments.
-              </p>
-              <div className="flex gap-3">
-                <Button variant="outline" size="sm" className="bg-white">
-                  Contact Support
-                </Button>
-                <Button variant="outline" size="sm" className="bg-white">
-                  View FAQs
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
     </div>
   );

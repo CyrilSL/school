@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
         monthlyInstallment: feeApplication.monthlyInstallment,
         appliedAt: feeApplication.appliedAt,
         approvedAt: feeApplication.approvedAt,
+        emiPlanId: feeApplication.emiPlanId,
         // Student info
         studentName: student.name,
         studentClass: student.class,
@@ -42,16 +43,41 @@ export async function GET(request: NextRequest) {
       .leftJoin(emiPlan, eq(feeApplication.emiPlanId, emiPlan.id))
       .where(eq(student.parentId, session.user.id));
 
-    // Get onboarding status
+    // Get onboarding status and next step
     const profile = await db
       .select({
         isOnboardingCompleted: parentProfile.isOnboardingCompleted,
+        fullName: parentProfile.fullName,
+        applicantPan: parentProfile.applicantPan,
+        gender: parentProfile.gender,
+        fatherName: parentProfile.fatherName,
+        motherName: parentProfile.motherName,
       })
       .from(parentProfile)
       .where(eq(parentProfile.userId, session.user.id))
       .limit(1);
 
     const isOnboardingCompleted = profile[0]?.isOnboardingCompleted ?? false;
+
+    // Determine next step if onboarding is not completed
+    let nextStep = 1;
+    if (!isOnboardingCompleted && applications.length > 0) {
+      // Check which step they need to complete
+      const app = applications[0];
+      const prof = profile[0];
+
+      if (!app) {
+        nextStep = 1; // Need to create application
+      } else if (!app.emiPlanId) {
+        nextStep = 2; // Need to select EMI plan
+      } else if (!prof?.fullName) {
+        nextStep = 3; // Need primary earner details
+      } else if (!prof?.applicantPan || !prof?.gender || !prof?.fatherName || !prof?.motherName) {
+        nextStep = 5; // Need personal details
+      } else {
+        nextStep = 6; // Should be completed
+      }
+    }
 
     // Transform the data to match the frontend format
     const transformedApplications = applications.map((app) => ({
@@ -60,10 +86,10 @@ export async function GET(request: NextRequest) {
       academicYear: app.academicYear,
       studentName: app.studentName,
       totalFees: Number(app.totalAmount),
-      status: getApplicationStatus(app.status, isOnboardingCompleted),
-      statusText: getStatusText(app.status, isOnboardingCompleted),
-      actionText: getActionText(app.status, isOnboardingCompleted),
-      actionUrl: getActionUrl(app.id, app.status, isOnboardingCompleted),
+      status: getApplicationStatus(app.status, isOnboardingCompleted, app.emiPlanId),
+      statusText: getStatusText(app.status, isOnboardingCompleted, app.emiPlanId),
+      actionText: getActionText(app.status, isOnboardingCompleted, app.emiPlanId),
+      actionUrl: getActionUrl(app.id, app.status, isOnboardingCompleted, nextStep, app.emiPlanId),
       appliedAt: app.appliedAt?.toISOString(),
       emiPlan: app.emiPlanName ? {
         name: app.emiPlanName,
@@ -87,14 +113,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function getApplicationStatus(dbStatus: string, isOnboardingCompleted: boolean) {
-  if (!isOnboardingCompleted) {
+function getApplicationStatus(dbStatus: string, isOnboardingCompleted: boolean, emiPlanId: string | null) {
+  if (!isOnboardingCompleted || !emiPlanId) {
     return "onboarding_pending";
   }
 
   switch (dbStatus) {
     case "platform_review":
-      return "emi_pending";
+      return "emi_progress";
     case "approved":
       return "emi_progress";
     case "active":
@@ -108,16 +134,20 @@ function getApplicationStatus(dbStatus: string, isOnboardingCompleted: boolean) 
   }
 }
 
-function getStatusText(dbStatus: string, isOnboardingCompleted: boolean) {
+function getStatusText(dbStatus: string, isOnboardingCompleted: boolean, emiPlanId: string | null) {
   if (!isOnboardingCompleted) {
     return "Please complete your application";
   }
 
+  if (!emiPlanId) {
+    return "Please select an EMI plan";
+  }
+
   switch (dbStatus) {
     case "platform_review":
-      return "Please complete your EMI form";
+      return "Application under review";
     case "approved":
-      return "Your EMI registration is in progress";
+      return "Your EMI plan is active";
     case "active":
       return "EMI plan is active";
     case "paid_to_institution":
@@ -125,18 +155,17 @@ function getStatusText(dbStatus: string, isOnboardingCompleted: boolean) {
     case "rejected":
       return "Application rejected";
     default:
-      return "Please complete your EMI form";
+      return "Application submitted";
   }
 }
 
-function getActionText(dbStatus: string, isOnboardingCompleted: boolean) {
-  if (!isOnboardingCompleted) {
-    return "Complete Application";
+function getActionText(dbStatus: string, isOnboardingCompleted: boolean, emiPlanId: string | null) {
+  if (!isOnboardingCompleted || !emiPlanId) {
+    return "Complete Now";
   }
 
   switch (dbStatus) {
     case "platform_review":
-      return "Complete now";
     case "approved":
     case "active":
       return "View Details";
@@ -145,24 +174,16 @@ function getActionText(dbStatus: string, isOnboardingCompleted: boolean) {
     case "rejected":
       return "View Details";
     default:
-      return "Complete now";
+      return "View Details";
   }
 }
 
-function getActionUrl(applicationId: string, dbStatus: string, isOnboardingCompleted: boolean) {
-  if (!isOnboardingCompleted) {
-    return "/parent/apply/steps/1";
+function getActionUrl(applicationId: string, dbStatus: string, isOnboardingCompleted: boolean, nextStep: number, emiPlanId: string | null) {
+  // If onboarding is not completed OR no EMI plan selected, go to the next step
+  if (!isOnboardingCompleted || !emiPlanId) {
+    return `/parent/apply/steps/${nextStep}`;
   }
 
-  switch (dbStatus) {
-    case "platform_review":
-      return `/parent/dashboard/applications/${applicationId}`;
-    case "approved":
-    case "active":
-    case "paid_to_institution":
-    case "rejected":
-      return `/parent/dashboard/applications/${applicationId}`;
-    default:
-      return `/parent/dashboard/applications/${applicationId}`;
-  }
+  // Otherwise, view application details
+  return `/parent/dashboard/applications/${applicationId}`;
 }

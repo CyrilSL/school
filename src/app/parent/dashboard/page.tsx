@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Alert, AlertDescription } from "~/components/ui/alert";
+import DeleteApplicationButton from "~/components/parent/delete-application-button";
 import {
   CreditCard,
   FileText,
@@ -384,7 +385,7 @@ export default async function ParentDashboard() {
         {applications.map((application) => (
           <Card key={application.id} className="hover:shadow-lg transition-shadow border-t-4 border-t-blue-600">
             <CardHeader className="pb-4">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="text-xs text-gray-500 mb-1">ID: {application.id}</div>
                   <CardTitle className="text-lg leading-tight text-gray-900">{application.institution}</CardTitle>
@@ -406,6 +407,11 @@ export default async function ParentDashboard() {
                     : "In Progress"}
                 </Badge>
               </div>
+              <DeleteApplicationButton
+                applicationId={application.id}
+                institutionName={application.institution}
+                status={application.status}
+              />
             </CardHeader>
 
             <CardContent className="space-y-4">

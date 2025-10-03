@@ -24,10 +24,13 @@ const adminNavItems = [
   },
 ];
 
-export default function DashboardNavbar() {
+interface DashboardNavbarProps {
+  userRole?: string;
+}
+
+export default function DashboardNavbar({ userRole }: DashboardNavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session } = authClient.useSession();
 
   const handleLogout = async () => {
     try {
@@ -43,7 +46,7 @@ export default function DashboardNavbar() {
     }
   };
 
-  const navItems = session?.user?.role === "admin" ? adminNavItems : parentNavItems;
+  const navItems = userRole === "admin" ? adminNavItems : parentNavItems;
 
   return (
     <nav className="border-b bg-white">

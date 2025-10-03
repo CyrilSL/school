@@ -19,12 +19,12 @@ export default async function authMiddleware(request: NextRequest) {
   const isProtectedInstitutionRoute = protectedInstitutionRoutes.some(route => pathName.startsWith(route));
   const isProtectedParentRoute = protectedParentRoutes.some(route => pathName.startsWith(route));
   const isAdminBaseRoute = pathName === "/admin";
-  // const isOnlyProtectedRoutes = onlyProtectedRoutes.includes(pathName);
-  // const isNoAuthRoute = noAuthRoutes.includes(pathName);
+  const isPublicRoute = pathName === "/" || pathName.startsWith("/apply");
 
-  // if (isNoAuthRoute) {
-  //   return NextResponse.next();
-  // }
+  // Allow public routes without session check
+  if (isPublicRoute && !isProtectedAdminRoute && !isProtectedInstitutionRoute && !isProtectedParentRoute) {
+    return NextResponse.next();
+  }
 
   const { data: session } = await betterFetch<Session>(
     "/api/auth/get-session",
@@ -64,7 +64,8 @@ export default async function authMiddleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/login/parent", request.url));
     }
 
-    return NextResponse.redirect(new URL("/", request.url));
+    // Allow homepage and other public routes
+    return NextResponse.next();
   }
 
   // If logged in, redirect away from auth/password routes to appropriate dashboard
@@ -150,6 +151,6 @@ export default async function authMiddleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.ico|.*\\.webp).*)",
   ],
 };

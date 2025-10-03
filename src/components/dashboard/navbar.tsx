@@ -6,7 +6,7 @@ import Image from "next/image";
 import { LogOut } from "lucide-react";
 import { authClient } from "~/server/auth/client";
 
-const navItems = [
+const parentNavItems = [
   {
     title: "Applications",
     href: "/parent/dashboard",
@@ -17,9 +17,17 @@ const navItems = [
   },
 ];
 
+const adminNavItems = [
+  {
+    title: "Dashboard",
+    href: "/admin/dashboard",
+  },
+];
+
 export default function DashboardNavbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = authClient.useSession();
 
   const handleLogout = async () => {
     try {
@@ -34,6 +42,8 @@ export default function DashboardNavbar() {
       console.error("Error signing out:", error);
     }
   };
+
+  const navItems = session?.user?.role === "admin" ? adminNavItems : parentNavItems;
 
   return (
     <nav className="border-b bg-white">

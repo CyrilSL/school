@@ -155,8 +155,11 @@ export default function ApplicationDetailsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Application Details</h1>
-            <p className="text-gray-600">Application ID: {application.id}</p>
+            <h1 className="text-3xl font-bold mb-2">{application.student?.institution?.name || 'Application Details'}</h1>
+            <p className="text-lg text-gray-700 mb-1">
+              {application.student?.class && `${application.student.class} ${application.student.section ? `- Section ${application.student.section}` : ''}`}
+            </p>
+            <p className="text-sm text-gray-600">Application ID: {application.id}</p>
           </div>
           <Badge className={getStatusColor(application.status)}>
             {application.status === "emi_pending" ? "EMI Setup Required" : "In Progress"}
@@ -205,7 +208,7 @@ export default function ApplicationDetailsPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <div className="text-gray-600">Institution</div>
-                <div className="font-medium">{application.feeStructure?.name || '-'}</div>
+                <div className="font-medium">{application.student?.institution?.name || '-'}</div>
               </div>
               <div>
                 <div className="text-gray-600">Academic Year</div>
@@ -214,6 +217,14 @@ export default function ApplicationDetailsPage() {
               <div>
                 <div className="text-gray-600">Student Name</div>
                 <div className="font-medium">{application.student?.name || '-'}</div>
+              </div>
+              <div>
+                <div className="text-gray-600">Class / Course</div>
+                <div className="font-medium">{application.student?.class ? `${application.student.class}${application.student.section ? ` - ${application.student.section}` : ''}` : '-'}</div>
+              </div>
+              <div>
+                <div className="text-gray-600">Fee Type</div>
+                <div className="font-medium">{application.feeStructure?.name || '-'}</div>
               </div>
               <div>
                 <div className="text-gray-600">Submitted Date</div>

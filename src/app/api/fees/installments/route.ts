@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "~/server/db";
 import { installment, feeApplication, student } from "~/server/db/schema";
 import { getServerSession } from "~/server/auth";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, asc } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,8 +34,10 @@ export async function GET(request: NextRequest) {
     // Get installments for this application
     const installments = await db.query.installment.findMany({
       where: eq(installment.feeApplicationId, applicationId),
-      orderBy: [installment.installmentNumber],
+      orderBy: [asc(installment.installmentNumber)],
     });
+
+    console.log(`Found ${installments.length} installments for application ${applicationId}`);
 
     return NextResponse.json({ installments });
   } catch (error) {

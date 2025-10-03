@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "~/server/db";
-import { feeApplication, student, feeStructure, emiPlan } from "~/server/db/schema";
+import { feeApplication, student, feeStructure, emiPlan, institution } from "~/server/db/schema";
 import { getServerSession } from "~/server/auth";
 import { eq } from "drizzle-orm";
 
@@ -24,11 +24,25 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
         emiPlan: true,
       },
     });
+
     // Check if found and owned by user
     if (!application || application.student.parentId !== session.user.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json(application);
+
+    // Fetch institution separately
+    const inst = await db.query.institution.findFirst({
+      where: eq(institution.id, application.student.institutionId),
+    });
+
+    // Return application with institution data merged
+    return NextResponse.json({
+      ...application,
+      student: {
+        ...application.student,
+        institution: inst,
+      },
+    });
   } catch (err) {
     console.error("Error fetching application by ID:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

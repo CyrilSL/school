@@ -7,9 +7,11 @@ import { Button } from "~/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { Badge } from "~/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "~/components/ui/dropdown-menu";
-import { Building, Search, Edit, Phone, MapPin, MoreHorizontal, Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { Building, Search, Edit, Phone, MapPin, MoreHorizontal, Trash2, FileText } from "lucide-react";
 import AddInstitutionSheet from "./add-institution-sheet";
 import EditInstitutionSheet from "./edit-institution-sheet";
+import ApplicationsTab from "./applications-tab";
 
 interface Institution {
   id: string;
@@ -89,17 +91,36 @@ export default function AdminDashboardClient({ institutions }: AdminDashboardCli
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Institution Management</h2>
-          <p className="text-gray-600">
-            Manage educational institutions and their details
-          </p>
-        </div>
-        <AddInstitutionSheet />
-      </div>
+      <Tabs defaultValue="institutions" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 h-11 bg-slate-100 dark:bg-slate-800">
+          <TabsTrigger
+            value="institutions"
+            className="data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-950 dark:data-[state=active]:text-slate-50"
+          >
+            <Building className="h-4 w-4 mr-2" />
+            Institutions
+          </TabsTrigger>
+          <TabsTrigger
+            value="applications"
+            className="data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-950 dark:data-[state=active]:text-slate-50"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Applications
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
+        <TabsContent value="institutions" className="space-y-6 mt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Institution Management</h2>
+              <p className="text-muted-foreground">
+                Manage educational institutions and their details
+              </p>
+            </div>
+            <AddInstitutionSheet />
+          </div>
+
+          <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
@@ -120,14 +141,14 @@ export default function AdminDashboardClient({ institutions }: AdminDashboardCli
           <CardContent>
             {institutions.length === 0 ? (
               <div className="text-center py-8">
-                <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">No institutions added yet</p>
+                <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">No institutions added yet</p>
                 <AddInstitutionSheet />
               </div>
             ) : filteredInstitutions.length === 0 ? (
               <div className="text-center py-8">
-                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">No institutions found matching "{searchQuery}"</p>
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">No institutions found matching "{searchQuery}"</p>
               </div>
             ) : (
               <div className="border rounded-lg">
@@ -143,11 +164,11 @@ export default function AdminDashboardClient({ institutions }: AdminDashboardCli
                   </TableHeader>
                   <TableBody>
                     {filteredInstitutions.map((inst) => (
-                      <TableRow key={inst.id} className="hover:bg-gray-50">
+                      <TableRow key={inst.id}>
                         <TableCell>
                           <div className="flex flex-col">
-                            <div className="font-medium text-gray-900">{inst.name}</div>
-                            <div className="text-sm text-gray-500">{inst.type}</div>
+                            <div className="font-medium">{inst.name}</div>
+                            <div className="text-sm text-muted-foreground">{inst.type}</div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -162,22 +183,22 @@ export default function AdminDashboardClient({ institutions }: AdminDashboardCli
                           <div className="flex flex-col text-sm">
                             {inst.phone && (
                               <div className="flex items-center space-x-1">
-                                <Phone className="h-3 w-3 text-gray-400" />
+                                <Phone className="h-3 w-3 text-muted-foreground" />
                                 <span>{inst.phone}</span>
                               </div>
                             )}
                             {inst.email && (
-                              <div className="text-gray-600 mt-1">{inst.email}</div>
+                              <div className="text-muted-foreground mt-1">{inst.email}</div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-1 text-sm">
-                            <MapPin className="h-3 w-3 text-gray-400" />
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
                             <span>{inst.city}{inst.state ? `, ${inst.state}` : ''}</span>
                           </div>
                           {inst.board && (
-                            <div className="text-xs text-gray-500 mt-1">{inst.board}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{inst.board}</div>
                           )}
                         </TableCell>
                         <TableCell>
@@ -217,11 +238,17 @@ export default function AdminDashboardClient({ institutions }: AdminDashboardCli
           </CardContent>
         </Card>
 
-        <EditInstitutionSheet
-          institution={editingInstitution}
-          open={editSheetOpen}
-          onOpenChange={handleEditSheetClose}
-        />
+          <EditInstitutionSheet
+            institution={editingInstitution}
+            open={editSheetOpen}
+            onOpenChange={handleEditSheetClose}
+          />
+        </TabsContent>
+
+        <TabsContent value="applications" className="space-y-6 mt-6">
+          <ApplicationsTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

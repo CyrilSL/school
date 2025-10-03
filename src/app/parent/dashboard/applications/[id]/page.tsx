@@ -345,7 +345,7 @@ export default function ApplicationDetailsPage() {
                             <Button
                               size="sm"
                               onClick={() => handlePayInstallment(installment.id)}
-                              className={status === "overdue" ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}
+                              className={status === "overdue" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}
                               disabled={payingInstallment === installment.id}
                             >
                               {payingInstallment === installment.id ? "Processing..." : "Pay Now"}
